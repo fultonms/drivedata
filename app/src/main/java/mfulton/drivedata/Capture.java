@@ -1,6 +1,7 @@
 package mfulton.drivedata;
 
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
@@ -19,16 +20,27 @@ import java.io.IOException;
 
 public class Capture extends ActionBarActivity {
     private boolean accel, location, capturing;
+    Intent intent;
+    WakefulReciever wakeyWakey;
+    static final String ACTION_CAPTURE = "com.mfulton.drivedata.action.CAPTURE";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Intent intent = getIntent();
+        intent = getIntent();
         accel = intent.getBooleanExtra("accel", false);
         location = intent.getBooleanExtra("location", false);
 
+        wakeyWakey = new WakefulReciever();
+        registerReceiver(wakeyWakey,new IntentFilter(ACTION_CAPTURE));
 
         setContentView(R.layout.activity_capture);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    }
+
+    @Override
+    public void onDestroy(){
+        unregisterReceiver(wakeyWakey);
     }
 
     @Override
@@ -57,10 +69,6 @@ public class Capture extends ActionBarActivity {
         Button mine = (Button) view.findViewById(R.id.stopCapture);
 
         if(capturing){
-            Intent intent = new Intent(this, SensorShip.class);
-            startService(intent);
-
-            //Stop Camera Capture.
             capturing=false;
             mine.setText("Go Back");
         }
@@ -72,6 +80,12 @@ public class Capture extends ActionBarActivity {
         }
         else{
             capturing = true;
+            Log.i("CaptureActivity", "Trying to send message.");
+            Intent message = new Intent(ACTION_CAPTURE);
+            message.putExtra("accel", accel);
+            message.putExtra("location", location);
+
+            sendBroadcast(message);
             mine.setText("Stop Capture");
             //Start Camera Capture.
         }
