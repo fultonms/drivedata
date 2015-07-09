@@ -5,6 +5,9 @@ import android.content.IntentFilter;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.SystemClock;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -21,27 +24,23 @@ import java.io.IOException;
 public class Capture extends ActionBarActivity {
     private boolean accel, location, capturing;
     Intent intent;
-    WakefulReciever wakeyWakey;
     static final String ACTION_CAPTURE = "com.mfulton.drivedata.action.CAPTURE";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        capturing = false;
         super.onCreate(savedInstanceState);
         intent = getIntent();
         accel = intent.getBooleanExtra("accel", false);
         location = intent.getBooleanExtra("location", false);
-
-        wakeyWakey = new WakefulReciever();
-        registerReceiver(wakeyWakey,new IntentFilter(ACTION_CAPTURE));
 
         setContentView(R.layout.activity_capture);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
     @Override
-    public void onDestroy(){
-        unregisterReceiver(wakeyWakey);
-    }
+    public void onDestroy(){}
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -69,6 +68,7 @@ public class Capture extends ActionBarActivity {
         Button mine = (Button) view.findViewById(R.id.stopCapture);
 
         if(capturing){
+            Log.i("Capture", "Stopping Capture");;
             capturing=false;
             mine.setText("Go Back");
         }
@@ -80,12 +80,18 @@ public class Capture extends ActionBarActivity {
         }
         else{
             capturing = true;
-            Log.i("CaptureActivity", "Trying to send message.");
-            Intent message = new Intent(ACTION_CAPTURE);
-            message.putExtra("accel", accel);
-            message.putExtra("location", location);
+            Log.i("CaptureActivity", "Starting Capture.");
 
-            sendBroadcast(message);
+            final Handler handler = new Handler(Looper.getMainLooper());
+            handler.postDelayed(
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.i("Handler", "Work Step: "+ SystemClock.elapsedRealtime());
+                            if(capturing){handler.postDelayed(this, 100);}
+                        }
+                    }, 100);
+
             mine.setText("Stop Capture");
             //Start Camera Capture.
         }

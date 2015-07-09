@@ -13,7 +13,6 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
-
         <activity
             android:name=".MainMenu"
             android:label="@string/app_name" >
@@ -32,13 +31,10 @@
                 android:value="mfulton.drivedata.MainMenu" />
         </activity>
 
-        <service
-            android:name=".CaptureService"
+        <receiver
+            android:name=".WakefulReciever"
             android:enabled="true"
-            android:exported="true" >
-        </service>
-
-        <receiver android:name=".WakefulReciever" android:enabled="true" android:exported="true"></receiver>
+            android:exported="true" />
 
     </application>
 
