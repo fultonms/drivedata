@@ -1,5 +1,6 @@
 package mfulton.drivedata;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.Camera;
@@ -7,6 +8,7 @@ import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.os.SystemClock;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
@@ -21,10 +23,11 @@ import android.widget.FrameLayout;
 import java.io.IOException;
 
 
-public class Capture extends ActionBarActivity {
+public class Capture extends Activity {
     private boolean accel, location, capturing;
-    Intent intent;
-    static final String ACTION_CAPTURE = "com.mfulton.drivedata.action.CAPTURE";
+    private Intent intent;
+    private static final String ACTION_CAPTURE = "com.mfulton.drivedata.action.CAPTURE";
+    private PowerManager.WakeLock wakelock;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,12 +37,20 @@ public class Capture extends ActionBarActivity {
         accel = intent.getBooleanExtra("accel", false);
         location = intent.getBooleanExtra("location", false);
 
+        PowerManager power = (PowerManager) getSystemService(POWER_SERVICE);
+        wakelock = power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "WakeTag");
+        wakelock.acquire();
+        if(wakelock.isHeld()){Log.i("Capture", "Aquired wakeLock @" + SystemClock.elapsedRealtime());}
+
         setContentView(R.layout.activity_capture);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
     @Override
-    public void onDestroy(){}
+    public void onDestroy(){
+        Log.i("Capture", "is terminating nicely.");
+        return;
+    }
 
 
     @Override
@@ -68,8 +79,12 @@ public class Capture extends ActionBarActivity {
         Button mine = (Button) view.findViewById(R.id.stopCapture);
 
         if(capturing){
-            Log.i("Capture", "Stopping Capture");;
             capturing=false;
+            wakelock.release();
+
+            Log.i("Capture", "Stopping Capture");
+            if(!wakelock.isHeld()){Log.i("Capture", "Released wakeLock @" + SystemClock.elapsedRealtime());}
+
             mine.setText("Go Back");
         }
         else if(!capturing && mine.getText().equals("Go Back")){
@@ -87,7 +102,14 @@ public class Capture extends ActionBarActivity {
                     new Runnable() {
                         @Override
                         public void run() {
-                            Log.i("Handler", "Work Step: "+ SystemClock.elapsedRealtime());
+                            //Capture image
+
+                            //Capture acceleration
+
+                            //Capture location
+
+                            //Write File
+
                             if(capturing){handler.postDelayed(this, 100);}
                         }
                     }, 100);

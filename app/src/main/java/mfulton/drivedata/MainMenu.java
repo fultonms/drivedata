@@ -1,15 +1,17 @@
 package mfulton.drivedata;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ToggleButton;
 
 
-public class MainMenu extends ActionBarActivity {
+public class MainMenu extends Activity {
     boolean accel, location;
 
     @Override
@@ -41,6 +43,12 @@ public class MainMenu extends ActionBarActivity {
 
         return super.onOptionsItemSelected(item);
     }
+    @Override
+    public void onDestroy(){
+        Log.i("MainMenu", "is terminating nicely.");
+        return;
+    }
+
 
     public void startCapture(View view){
         Intent intent= new Intent(this, Capture.class);
