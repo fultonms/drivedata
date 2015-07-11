@@ -4,12 +4,19 @@ import android.app.Activity;
 import android.content.Intent;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.ToggleButton;
 
+import org.w3c.dom.Text;
 
 public class MainMenu extends Activity {
     boolean accel, location;
@@ -51,18 +58,35 @@ public class MainMenu extends Activity {
 
 
     public void startCapture(View view){
+        View parent = view.getRootView();
+
+        TextView logEntry = (TextView) parent.findViewById(R.id.logNameEntry);
+
+
+        CharSequence logName = logEntry.getText();
+        String logString = logName.toString();
+
+        if(logString.isEmpty()){
+            logEntry.setError("This field cannot be empty");
+            return;
+        }
+
+        Log.i("MainMenu", "Log Name is " + logString);
+
+
         Intent intent= new Intent(this, Capture.class);
         intent.putExtra("accel", accel);
         intent.putExtra("location", location);
+        intent.putExtra("logName", logString);
         startActivity(intent);
     }
 
     public void accelButtonCheck(View view){
-        accel = ((ToggleButton) view).isChecked();
+        accel = ((Switch) view).isChecked();
     }
 
     public void locationButtonCheck(View view){
-        location = ((ToggleButton) view).isChecked();
+        location = ((Switch) view).isChecked();
     }
 
 }

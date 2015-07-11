@@ -22,6 +22,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+
         <activity
             android:name=".Capture"
             android:label="@string/title_activity_capture"
@@ -30,11 +32,6 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="mfulton.drivedata.MainMenu" />
         </activity>
-
-        <receiver
-            android:name=".WakefulReciever"
-            android:enabled="true"
-            android:exported="true" />
 
     </application>
 
