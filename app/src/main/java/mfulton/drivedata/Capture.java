@@ -17,28 +17,58 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOError;
 import java.io.IOException;
 import java.util.Calendar;
 
 
 public class Capture extends Activity {
+
+    private Intent intent;
     private boolean accel, location, capturing;
     private String logName;
-    private Intent intent;
-    private static final String ACTION_CAPTURE = "com.mfulton.drivedata.action.CAPTURE";
+
     private PowerManager.WakeLock wakelock;
     private File directory, logFile, imageDir;
 
+    Camera cam;
+    Preview preview;
+    private Camera.PictureCallback mPicture = new Camera.PictureCallback() {
+
+        @Override
+        public void onPictureTaken(byte[] data, Camera camera) {
+            File pictureFile = new File(imageDir.getPath(), "image");
+            if (pictureFile == null){
+                Log.d("Capture", "Error creating media file, check storage permissions: ");
+                return;
+            }
+
+            try {
+                FileOutputStream fos = new FileOutputStream(pictureFile);
+                fos.write(data);
+                fos.close();
+            } catch (FileNotFoundException e) {
+                Log.d("Capture", "File not found: " + e.getMessage());
+            } catch (IOException e) {
+                Log.d("Capture", "Error accessing file: " + e.getMessage());
+            }
+        }
+    };
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        capturing = false;
         super.onCreate(savedInstanceState);
 
         //Recieve intent and grab the extras
@@ -69,7 +99,18 @@ public class Capture extends Activity {
     }
 
     @Override
+    public void onResume(){
+        super.onResume();
+        Log.i("Capture onResume", "Gettting Camera and Preview");
+        cam = getCamera();
+        preview = new Preview(this, cam);
+        FrameLayout frame = (FrameLayout) findViewById(R.id.camPreview);
+        frame.addView(preview);
+    }
+
+    @Override
     public void onDestroy(){
+        cam.release();
         Log.i("Capture", "is terminating nicely.");
         return;
     }
@@ -104,6 +145,8 @@ public class Capture extends Activity {
                         @Override
                         public void run() {
                             //Capture image
+                            cam.takePicture(null, null, mPicture);
+                            Log.i("Hanlder Worker Thread", "Taking Picture");
 
                             //Capture acceleration
 
@@ -120,6 +163,18 @@ public class Capture extends Activity {
         }
     }
 
+    private static Camera getCamera(){
+        Camera c = null;
+        try{
+
+            c = Camera.open();
+        }catch(Exception e){
+            Log.e("getCamera", e.toString());
+        }
+
+        return c;
+    }
+
     //Sets up a file with the appropriate path and creates it if ineescary.
     public File filePrep(File parent, String filename, boolean isDirectory){
         File result = null;
@@ -127,7 +182,7 @@ public class Capture extends Activity {
 
         try {
             //Cheack to see if external storage is available.  If it is, use it.
-            if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
+            if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())){
                 //If no parent is provided, find the documents directory.
                 if (parent == null) {
                     path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).getPath();
