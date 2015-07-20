@@ -1,178 +1,79 @@
 package mfulton.drivedata;
 
-import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.hardware.Camera;
-import android.media.CamcorderProfile;
-import android.media.MediaRecorder;
+import android.hardware.Sensor;
+import android.hardware.SensorManager;
 import android.os.Environment;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.PowerManager;
-import android.os.SystemClock;
-import android.support.v7.app.ActionBarActivity;
-import android.os.Bundle;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
-import android.view.View;
-import android.view.ViewGroup;
-import android.view.WindowManager;
-import android.widget.Button;
-import android.widget.FrameLayout;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOError;
 import java.io.IOException;
-import java.util.Calendar;
+
+/**
+ * Created by michael on 7/20/15.
+ */
+public class Capture {
 
 
-public class Capture extends Activity {
-
-    private Intent intent;
-    private boolean accel, location, capturing;
+    private Context myContext;
     private String logName;
-
-    private PowerManager.WakeLock wakelock;
     private File directory, logFile, imageDir;
 
-    Camera cam;
-    Preview preview;
+    private SensorManager mySensors;
+    private Sensor myAccel;
+
+    private Camera cam;
+    private Preview preview;
     private Camera.PictureCallback mPicture = new Camera.PictureCallback() {
 
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
+
             File pictureFile = new File(imageDir.getPath(), "image");
             if (pictureFile == null){
-                Log.d("Capture", "Error creating media file, check storage permissions: ");
+                Log.d("CaptureActivity", "Error creating media file, check storage permissions: ");
                 return;
             }
 
             try {
                 FileOutputStream fos = new FileOutputStream(pictureFile);
+                Bitmap image;
+                BitmapFactory.Options options = new BitmapFactory.Options();
+
+                Log.i("CaptureActivity pictureCallback", "Attempting byte-array to bitmap convert");
+                image = BitmapFactory.decodeByteArray(data, 0, data.length,options );
+
+                Log.i("CaptureActivity pictureCallback", "Attempting to compress image");
+                image.compress(Bitmap.CompressFormat.JPEG, 100, fos);
+
                 fos.write(data);
                 fos.close();
             } catch (FileNotFoundException e) {
-                Log.d("Capture", "File not found: " + e.getMessage());
+                Log.d("CaptureActivity", "File not found: " + e.getMessage());
             } catch (IOException e) {
-                Log.d("Capture", "Error accessing file: " + e.getMessage());
+                Log.d("CaptureActivity", "Error accessing file: " + e.getMessage());
             }
+
         }
     };
 
+    public Capture(Context context, String name){
+        myContext = context;
+        logName = name;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        //Recieve intent and grab the extras
-        intent = getIntent();
-        accel = intent.getBooleanExtra("accel", false);
-        location = intent.getBooleanExtra("location", false);
-        logName = intent.getStringExtra("logName");
-
-        //Acquires a wake lock of this activity, released when the capture is compelte
-        PowerManager power = (PowerManager) getSystemService(POWER_SERVICE);
-        wakelock = power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "WakeTag");
-        wakelock.acquire();
-        if(wakelock.isHeld()){Log.i("Capture", "Aquired wakeLock @" + SystemClock.elapsedRealtime());}
-
-
-        //File prep for writing.  Creates the follow directory structure either on internal storage
-        //or in the documents directory.
-        // logName (directory)
-        //  |--> images (directory)
-        //  |--> logName.log (text file)
-        // See filePrep function for further work.
+        mySensors = (SensorManager)context.getSystemService(Context.SENSOR_SERVICE);
+        myAccel = mySensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
         directory = filePrep(null, logName, true);
         imageDir = filePrep(directory, "images", true);
         logFile = filePrep(directory, (logName + ".log"), false);
 
-        setContentView(R.layout.activity_capture);
-    }
 
-    @Override
-    public void onResume(){
-        super.onResume();
-        Log.i("Capture onResume", "Gettting Camera and Preview");
-        cam = getCamera();
-        preview = new Preview(this, cam);
-        FrameLayout frame = (FrameLayout) findViewById(R.id.camPreview);
-        frame.addView(preview);
-    }
-
-    @Override
-    public void onDestroy(){
-        cam.release();
-        Log.i("Capture", "is terminating nicely.");
-        return;
-    }
-
-
-    public void onButton(View view){
-        Button mine = (Button) view.findViewById(R.id.stopCapture);
-
-
-        if(capturing){
-            capturing=false;
-            wakelock.release();
-
-            Log.i("Capture", "Stopping Capture");
-            if(!wakelock.isHeld()){Log.i("Capture", "Released wakeLock @" + SystemClock.elapsedRealtime());}
-
-            mine.setText("Go Back");
-        }
-        else if(!capturing && mine.getText().equals("Go Back")){
-            Intent Sintent = new Intent(this, MainMenu.class);
-            Sintent.putExtra("accel", accel);
-            Sintent.putExtra("location", location);
-            startActivity(Sintent);
-        }
-        else{
-            capturing = true;
-            Log.i("CaptureActivity", "Starting Capture.");
-
-            final Handler handler = new Handler(Looper.getMainLooper());
-            handler.postDelayed(
-                    new Runnable() {
-                        @Override
-                        public void run() {
-                            //Capture image
-                            cam.takePicture(null, null, mPicture);
-                            Log.i("Hanlder Worker Thread", "Taking Picture");
-
-                            //Capture acceleration
-
-                            //Capture location
-
-                            //Write File
-
-                            if(capturing){handler.postDelayed(this, 100);}
-                        }
-                    }, 100);
-
-            mine.setText("Stop Capture");
-            //Start Camera Capture.
-        }
-    }
-
-    private static Camera getCamera(){
-        Camera c = null;
-        try{
-
-            c = Camera.open();
-        }catch(Exception e){
-            Log.e("getCamera", e.toString());
-        }
-
-        return c;
     }
 
     //Sets up a file with the appropriate path and creates it if ineescary.
@@ -199,7 +100,7 @@ public class Capture extends Activity {
             else {
                 //If no parent is provided, get the app file directory.
                 if (parent == null) {
-                    Context context = getApplicationContext();
+                    Context context = myContext;
                     path = context.getFilesDir().getPath();
                 }
                 //Otherwise just use the parent
@@ -241,5 +142,6 @@ public class Capture extends Activity {
         //Return the File, tied to a directory of .log file at the correct path..
         return result;
     }
+
 
 }

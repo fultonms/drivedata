@@ -25,7 +25,7 @@
 
 
         <activity
-            android:name=".Capture"
+            android:name=".CaptureActivity"
             android:label="@string/title_activity_capture"
             android:parentActivityName=".MainMenu"
             android:screenOrientation="landscape">
