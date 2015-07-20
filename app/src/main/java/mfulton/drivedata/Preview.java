@@ -26,7 +26,7 @@ public class Preview extends SurfaceView implements SurfaceHolder.Callback {
             cam.setPreviewDisplay(sHolder);
             cam.startPreview();
         }catch(Exception e){
-            Log.e("mfulton.drivedata.Preview surfaceCreated", e.toString());
+            Log.e("Preview surfaceCreated", e.toString());
         }
     }
 

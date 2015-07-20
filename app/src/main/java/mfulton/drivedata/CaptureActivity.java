@@ -1,4 +1,4 @@
-package mfulton.drivedata;
+ package mfulton.drivedata;
 
 import android.app.Activity;
 import android.content.Context;
@@ -17,6 +17,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.FrameLayout;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -26,7 +28,7 @@ import java.io.IOException;
 public class CaptureActivity extends Activity {
 
     private Intent intent;
-    private boolean accel, location, capturing;
+    private boolean accel, location;
     private String logName;
 
     private PowerManager.WakeLock wakelock;
@@ -44,8 +46,6 @@ public class CaptureActivity extends Activity {
         location = intent.getBooleanExtra("location", false);
         logName = intent.getStringExtra("logName");
 
-        myCapture = new Capture(getApplicationContext(), logName);
-
         //Acquires a wake lock of this activity, released when the capture is compelte
         PowerManager power = (PowerManager) getSystemService(POWER_SERVICE);
         wakelock = power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "WakeTag");
@@ -55,12 +55,13 @@ public class CaptureActivity extends Activity {
         }
 
         setContentView(R.layout.activity_capture);
+
+        myCapture = new Capture(getApplicationContext(), logName, ((FrameLayout)findViewById(R.id.camPreview)));
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        Log.i("CaptureActivity onResume", "Gettting Camera and Preview");
     }
 
     @Override
@@ -73,8 +74,8 @@ public class CaptureActivity extends Activity {
     public void onButton(View view) {
         Button mine = (Button) view.findViewById(R.id.stopCapture);
 
-        if (capturing) {
-            capturing = false;
+        if (myCapture.isCapturing()) {
+            myCapture.end();
             wakelock.release();
 
             Log.i("CaptureActivity", "Sto   pping CaptureActivity");
@@ -83,38 +84,14 @@ public class CaptureActivity extends Activity {
             }
 
             mine.setText("Go Back");
-        } else if (!capturing && mine.getText().equals("Go Back")) {
+        } else if (!myCapture.isCapturing() && mine.getText().equals("Go Back")) {
             Intent Sintent = new Intent(this, MainMenu.class);
             Sintent.putExtra("accel", accel);
             Sintent.putExtra("location", location);
             startActivity(Sintent);
         } else {
-            capturing = true;
-            Log.i("CaptureActivity", "Starting CaptureActivity.");
-
-            final Handler handler = new Handler(Looper.getMainLooper());
-            handler.postDelayed(
-                    new Runnable() {
-                        @Override
-                        public void run() {
-                            //CaptureActivity image
-                            //cam.takePicture(null, null, mPicture);
-                            Log.i("Hanlder Worker Thread", "Taking Picture");
-
-                            //CaptureActivity acceleration
-
-                            //CaptureActivity location
-
-                            //Write File
-
-                            if (capturing) {
-                                handler.postDelayed(this, 100);
-                            }
-                        }
-                    }, 100);
-
+            myCapture.begin();
             mine.setText("Stop CaptureActivity");
-            //Start Camera CaptureActivity.
         }
     }
 
