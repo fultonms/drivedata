@@ -1,13 +1,15 @@
 package mfulton.drivedata;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.hardware.Camera;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
@@ -15,7 +17,6 @@ import android.os.SystemClock;
 import android.util.Log;
 import android.widget.FrameLayout;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -30,14 +31,16 @@ public class Capture {
     private boolean capturing;
     private Context myContext;
     private String logName;
-    private File directory, logFile, imageDir;
-    private OutputStream outLog;
+    private File directory, accelFile, locationFile, imageDir;
+    private OutputStream outAccel, outLocation;
 
     private SensorManager mySensors;
     private Sensor myAccel;
+    private LocationManager local;
 
-    private float values[];
+    private float accelValues[];
     private float gravity[];
+    private double locationValues[];
     private long timestamp;
 
     private Camera cam;
@@ -50,14 +53,19 @@ public class Capture {
 
         mySensors = (SensorManager)context.getSystemService(Context.SENSOR_SERVICE);
         myAccel = mySensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        mySensors.registerListener(listener, myAccel, SensorManager.SENSOR_DELAY_NORMAL);
+        mySensors.registerListener(mySensorlistener, myAccel, SensorManager.SENSOR_DELAY_NORMAL);
+
+        local = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        local.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, myLocationListener);
 
         directory = filePrep(null, logName, true);
         imageDir = filePrep(directory, "images", true);
-        logFile = filePrep(directory, (logName + ".log"), false);
+        accelFile = filePrep(directory, (logName + "_ACCEL.log"), false);
+        locationFile = filePrep(directory, (logName + "_LOCATION.log"), false);
 
-        values = new float[3];
+        accelValues = new float[3];
         gravity = new float[3];
+        locationValues = new double[3];
 
         try{
             cam = Camera.open();
@@ -71,7 +79,8 @@ public class Capture {
         }
 
         try {
-            outLog = new FileOutputStream(logFile);
+            outAccel = new FileOutputStream(accelFile);
+            outLocation = new FileOutputStream(locationFile);
         }catch (Exception e){
             Log.e("Capture", e.toString());
         }
@@ -96,12 +105,14 @@ public class Capture {
 
                                 //CaptureActivity acceleration
                                 String message;
-                                message = Long.toString(timestamp) + " , " + Float.toString(values[0]) + " , " + Float.toString(values[1]) + " , "
-                                        + Float.toString(values[2]) + " ; " + "\n";
-                                outLog.write(message.getBytes());
+                                message = Long.toString(timestamp) + " , " + Float.toString(accelValues[0]) + " , " + Float.toString(accelValues[1]) + " , "
+                                        + Float.toString(accelValues[2]) + "\n";
+                                outAccel.write(message.getBytes());
 
                                 //CaptureActivity location
-
+                                message = Long.toString(timestamp) + " , " + Double.toString(locationValues[0]) + " , " + Double.toString(locationValues[1]) + " , "
+                                        + Double.toString(locationValues[2]) + "\n";
+                                outLocation.write(message.getBytes());
                             }
 
                         } catch (Exception e) {
@@ -121,7 +132,8 @@ public class Capture {
         capturing = false;
         cam.release();
         try {
-            outLog.close();
+            outAccel.close();
+            outLocation.close();
         }catch (Exception e){
             Log.e("Capture", e.toString());
         }
@@ -199,14 +211,14 @@ public class Capture {
         return result;
     }
 
-    private SensorEventListener listener = new SensorEventListener() {
+    private SensorEventListener mySensorlistener = new SensorEventListener() {
         @Override
         public void onSensorChanged(SensorEvent event) {
             if(event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION){
-                values[0] = event.values[0];
-                values[1] = event.values[1];
-                values[2] = event.values[2];
-
+                accelValues[0] = event.values[0];
+                accelValues[1] = event.values[1];
+                accelValues[2] = event.values[2];
+            }
 
             else {
                 final float alpha = (float) 0.9;
@@ -214,9 +226,9 @@ public class Capture {
                 gravity[1] = alpha * gravity[1] + (1-alpha) * event.values[1];
                 gravity[2] = alpha * gravity[2] + (1-alpha) * event.values[2];
 
-                values[0] = event.values[0] - gravity[0];
-                values[1] = event.values[1] - gravity[1];
-                values[2] = event.values[2] - gravity[2];
+                accelValues[0] = event.values[0] - gravity[0];
+                accelValues[1] = event.values[1] - gravity[1];
+                accelValues[2] = event.values[2] - gravity[2];
             }
 
 
@@ -225,6 +237,30 @@ public class Capture {
         @Override
         public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
+        }
+    };
+
+    private LocationListener myLocationListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+            locationValues[0] = location.getLatitude();
+            locationValues[1] = location.getLongitude();
+            locationValues[2] = location.getAltitude();
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+            Log.e("Capture", "LocationProvider is available");
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+            Log.e("Capture", "LocationProvider is NOT available");
         }
     };
 
