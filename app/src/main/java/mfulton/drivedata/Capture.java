@@ -152,9 +152,11 @@ public class Capture {
         try {
             //Cheack to see if external storage is available.  If it is, use it.
             if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())){
+                Log.e("Capture", "Using External Storage");
                 //If no parent is provided, find the documents directory.
                 if (parent == null) {
-                    path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).getPath();
+                    path = Environment.getExternalStorageDirectory().getPath();
+
                 }
                 //Use the provided parent.
                 else {
@@ -166,6 +168,7 @@ public class Capture {
             }
             //Use the internal storage.
             else {
+                Log.e("Capture", "Using Internal Storage");
                 //If no parent is provided, get the app file directory.
                 if (parent == null) {
                     Context context = myContext;
