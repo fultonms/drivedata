@@ -155,8 +155,8 @@ public class Capture {
                 Log.e("Capture", "Using External Storage");
                 //If no parent is provided, find the documents directory.
                 if (parent == null) {
-                    path = Environment.getExternalStorageDirectory().getPath();
-
+                    //path = Environment.getExternalStorageDirectory().getPath();
+                    path = System.getenv("SECONDARY_STORAGE");
                 }
                 //Use the provided parent.
                 else {

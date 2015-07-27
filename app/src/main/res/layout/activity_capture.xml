@@ -18,10 +18,11 @@
         android:layout_centerHorizontal="true" />
 
     <FrameLayout
-        android:layout_width="match_parent"
+        android:layout_width="800pt"
         android:layout_height="match_parent"
-        android:layout_centerHorizontal="true"
+        android:id="@+id/camPreview"
         android:layout_above="@+id/stopCapture"
-        android:id="@+id/camPreview"></FrameLayout>
+        android:layout_alignRight="@+id/stopCapture"
+        android:layout_alignEnd="@+id/stopCapture"></FrameLayout>
 
 </RelativeLayout>
