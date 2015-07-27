@@ -78,7 +78,7 @@ public class CaptureActivity extends Activity {
             myCapture.end();
             wakelock.release();
 
-            Log.i("CaptureActivity", "Sto   pping CaptureActivity");
+            Log.i("CaptureActivity", "Stopping CaptureActivity");
             if (!wakelock.isHeld()) {
                 Log.i("CaptureActivity", "Released wakeLock @" + SystemClock.elapsedRealtime());
             }

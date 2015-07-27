@@ -38,9 +38,11 @@ public class Capture {
 
     private float values[];
     private float gravity[];
+    private long timestamp;
 
     private Camera cam;
     private Preview preview;
+    private boolean cameraSafe;
 
     public Capture(Context context, String name, FrameLayout frame){
         myContext = context;
@@ -77,6 +79,7 @@ public class Capture {
 
     public void begin(){
         capturing = true;
+        cameraSafe = true;
         Log.i("Capture", "Starting the capture.");
 
         final Handler handler = new Handler(Looper.getMainLooper());
@@ -86,23 +89,24 @@ public class Capture {
                     public void run() {
                         try {
                         //CaptureActivity image
-                            cam.takePicture(null, null, myPicture);
-                            cam.startPreview();
-                            cam.startPreview();
+                            if(cameraSafe) {
+                                cam.takePicture(null, null, myPicture);
+                                cameraSafe = false;
+                                cam.startPreview();
 
-                            //CaptureActivity acceleration
-                            String message;
-                            message = Float.toString(values[0]) + " , " + Float.toString(values[1]) + " , "
-                                    + Float.toString(values[2]) + " ; " + "\n";
-                            outLog.write(message.getBytes());
+                                //CaptureActivity acceleration
+                                String message;
+                                message = Long.toString(timestamp) + " , " + Float.toString(values[0]) + " , " + Float.toString(values[1]) + " , "
+                                        + Float.toString(values[2]) + " ; " + "\n";
+                                outLog.write(message.getBytes());
 
-                            //CaptureActivity location
+                                //CaptureActivity location
 
-                            //Write File
-
-                            } catch (Exception e) {
-                                Log.e("Capture", e.toString());
                             }
+
+                        } catch (Exception e) {
+                                Log.e("Capture Loop", e.toString());
+                        }
 
                         if (capturing) {
                             handler.postDelayed(this, 100);
@@ -202,7 +206,7 @@ public class Capture {
                 values[0] = event.values[0];
                 values[1] = event.values[1];
                 values[2] = event.values[2];
-            }
+
 
             else {
                 final float alpha = (float) 0.9;
@@ -229,8 +233,10 @@ public class Capture {
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
 
-            File pictureFile =  new File(imageDir.getPath() +File.separator + "IMG_" + SystemClock.elapsedRealtime() + ".jpg");
+            timestamp = SystemClock.elapsedRealtime();
+            File pictureFile =  new File(imageDir.getPath() +File.separator + logName + "_IMG_" + timestamp + ".jpg");
             if (pictureFile == null){
+                cameraSafe = true;
                 Log.d("Capture", "Error creating media file, check storage permissions: ");
                 return;
             }
@@ -243,7 +249,12 @@ public class Capture {
                 Log.d("Capture", "File not found: " + e.getMessage());
             } catch (IOException e) {
                 Log.d("Capture", "Error accessing file: " + e.getMessage());
+            } catch (Exception e){
+                Log.e("Capture", e.toString());
             }
+
+            cameraSafe= true;
+
         }
     };
 
