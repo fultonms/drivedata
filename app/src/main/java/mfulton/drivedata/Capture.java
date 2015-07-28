@@ -1,5 +1,6 @@
 package mfulton.drivedata;
 
+import android.app.Activity;
 import android.content.Context;
 import android.hardware.Camera;
 import android.hardware.Sensor;
@@ -16,6 +17,7 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Log;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -28,8 +30,10 @@ import java.io.OutputStream;
  */
 public class Capture {
 
-    private boolean capturing;
     private Context myContext;
+    private Activity myActivity;
+
+    private boolean capturing;
     private String logName;
     private File directory, accelFile, locationFile, imageDir;
     private OutputStream outAccel, outLocation;
@@ -47,7 +51,8 @@ public class Capture {
     private Preview preview;
     private boolean cameraSafe;
 
-    public Capture(Context context, String name, FrameLayout frame){
+    public Capture(Activity activity, Context context, String name, FrameLayout frame){
+        myActivity = activity;
         myContext = context;
         logName = name;
 
@@ -113,6 +118,17 @@ public class Capture {
                                 message = Long.toString(timestamp) + " , " + Double.toString(locationValues[0]) + " , " + Double.toString(locationValues[1]) + " , "
                                         + Double.toString(locationValues[2]) + "\n";
                                 outLocation.write(message.getBytes());
+
+
+                                message="( " + Float.toString(accelValues[0]) + ", " + Float.toString(accelValues[1]) + ", "
+                                        + Float.toString(accelValues[2]) + " )";
+                                ((TextView) myActivity.findViewById(R.id.accel_indicator)).setText(message);
+
+                                message="( " + Double.toString(locationValues[0]) + ", " + Double.toString(locationValues[1]) + ", "
+                                        + Double.toString(locationValues[2]) + " )";
+                                ((TextView) myActivity.findViewById(R.id.local_indicator)).setText(message);
+
+
                             }
 
                         } catch (Exception e) {
@@ -157,6 +173,7 @@ public class Capture {
                 if (parent == null) {
                     //path = Environment.getExternalStorageDirectory().getPath();
                     path = System.getenv("SECONDARY_STORAGE");
+                    path = path + "/DriveDataCaptures";
                 }
                 //Use the provided parent.
                 else {

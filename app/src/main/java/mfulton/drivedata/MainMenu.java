@@ -11,14 +11,10 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 public class MainMenu extends Activity {
-    boolean accel, location;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_menu);
-        accel= true;
-        location = true;
     }
 
     @Override
@@ -67,18 +63,9 @@ public class MainMenu extends Activity {
 
 
         Intent intent= new Intent(this, CaptureActivity.class);
-        intent.putExtra("accel", accel);
-        intent.putExtra("location", location);
         intent.putExtra("logName", logString);
         startActivity(intent);
     }
 
-    public void accelButtonCheck(View view){
-        accel = ((Switch) view).isChecked();
-    }
-
-    public void locationButtonCheck(View view){
-        location = ((Switch) view).isChecked();
-    }
 
 }

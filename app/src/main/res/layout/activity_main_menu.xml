@@ -17,29 +17,6 @@
         android:layout_marginTop="60dp"
         android:onClick="startCapture"/>
 
-    <Switch
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/accel_switcher"
-        android:id="@+id/accel_switch"
-        android:layout_below="@+id/button"
-        android:layout_marginTop="70dp"
-        android:checked="true"
-        android:onClick="accelButtonCheck"/>
-
-    <Switch
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/location_switch"
-        android:id="@+id/location_switch"
-        android:layout_below="@+id/accel_switch"
-        android:layout_alignRight="@+id/accel_switch"
-        android:layout_alignEnd="@+id/accel_switch"
-        android:layout_marginTop="40dp"
-        android:checked="true"
-        android:onClick="locationButtonCheck"
-        />
-
     <EditText
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -47,7 +24,7 @@
         android:layout_marginTop="35dp"
         android:inputType="text"
         android:hint="Enter a name for this capture."
-        android:layout_below="@+id/location_switch"
-        android:layout_centerHorizontal="true" />
+        android:layout_centerHorizontal="true"
+        android:layout_below="@+id/button" />
 
 </RelativeLayout>
