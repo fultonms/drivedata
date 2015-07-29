@@ -65,21 +65,23 @@ public class CaptureActivity extends Activity {
             Log.i("CaptureActivity", "Stopping CaptureActivity");
         }
 
-        super.onBackPressed();
+        Intent intent = new Intent(this, MainMenu.class);
+        startActivity(intent);
+
     }
 
 
     public void onClick(View view) {
         TextView recorder = (TextView)findViewById(R.id.recording_indicator);
 
-        if (myCapture.isCapturing() && !(recorder.getText().equals("REC"))) {
+        if (myCapture.isCapturing() && (recorder.getText().equals("REC"))) {
+            recorder.setText("Capture Complete");
             myCapture.end();
 
             Log.i("CaptureActivity", "Stopping CaptureActivity");
 
         }else if(!myCapture.isCapturing()) {
             recorder.setText("REC");
-            recorder.setTextSize(15);
             myCapture.begin();
             Log.i("CaptureActivity", "Starting CaptureActivity");
         }

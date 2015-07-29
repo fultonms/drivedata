@@ -124,11 +124,6 @@ public class Capture {
                                         + Float.toString(accelValues[2]) + " )";
                                 ((TextView) myActivity.findViewById(R.id.accel_indicator)).setText(message);
 
-                                message="( " + Double.toString(locationValues[0]) + ", " + Double.toString(locationValues[1]) + ", "
-                                        + Double.toString(locationValues[2]) + " )";
-                                ((TextView) myActivity.findViewById(R.id.local_indicator)).setText(message);
-
-
                             }
 
                         } catch (Exception e) {
@@ -146,6 +141,7 @@ public class Capture {
 
     public void end(){
         capturing = false;
+
         cam.release();
         try {
             outAccel.close();
