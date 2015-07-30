@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">DriveData</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="menu_button_string">Use These Settings</string>
+    <string name="accel_switcher">Accelerometer Data?</string>
+    <string name="location_switch">Location Data?</string>
+    <string name="tick_enter">Enter an interval for data points</string>
+    <string name="title_activity_capture">Capture</string>
+    <string name="stop_button">Start Capture</string>
+    <string name="fps_entry">Enter data points per second (max 30)</string>
+    <string name="logname_entry_default">Enter name for log.</string>
+    <string name="title_log_string">Enter a name for this capture.</string>
+</resources>
