@@ -39,7 +39,7 @@
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:text="Accel(0, 0, 0)"
             android:textSize="10pt"
-            android:textColor= "#8800FF"
+            android:textColor= "#33FF33"
             android:id="@+id/accel_indicator"
             android:layout_gravity="left|bottom"
             />
@@ -53,6 +53,14 @@
             android:id="@+id/recording_indicator"
             android:layout_gravity="right|top"
             />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textSize= "10pt"
+            android:text="Pending"
+            android:id="@+id/space_remaining" />
     </FrameLayout>
 
 </RelativeLayout>

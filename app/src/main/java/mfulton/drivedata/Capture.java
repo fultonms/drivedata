@@ -14,8 +14,10 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.StatFs;
 import android.os.SystemClock;
 import android.util.Log;
+import android.util.StateSet;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -123,6 +125,16 @@ public class Capture {
                                 message="( " + Float.toString(accelValues[0]) + ", " + Float.toString(accelValues[1]) + ", "
                                         + Float.toString(accelValues[2]) + " )";
                                 ((TextView) myActivity.findViewById(R.id.accel_indicator)).setText(message);
+
+                                StatFs stats = new StatFs(directory.getPath());
+                                long bytesPossible = (long) stats.getBlockSize() * (long) stats.getBlockCount();
+                                long bytesAvailable = (long) stats.getBlockSize() * (long) stats.getAvailableBlocks();
+                                long megsAvailable = bytesAvailable/ 1048576 ;
+                                long megsPossible = bytesPossible/ 1048576;
+
+                                message = Long.toString(megsAvailable) + " / " + Long.toString(megsPossible) + " Free";
+
+                                ((TextView) myActivity.findViewById(R.id.space_remaining)).setText(message);
 
                             }
 
