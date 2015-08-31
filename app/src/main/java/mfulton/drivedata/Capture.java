@@ -43,10 +43,12 @@ public class Capture {
     private SensorManager mySensors;
     private Sensor myAccel;
     private LocationManager local;
+    private Sensor myOrient;
 
     private float accelValues[];
     private float gravity[];
     private double locationValues[];
+    private float orientationValues[];
     private long timestamp;
 
     private Camera cam;
@@ -60,7 +62,9 @@ public class Capture {
 
         mySensors = (SensorManager)context.getSystemService(Context.SENSOR_SERVICE);
         myAccel = mySensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        mySensors.registerListener(mySensorlistener, myAccel, SensorManager.SENSOR_DELAY_NORMAL);
+        myOrient = mySensors.getDefaultSensor(Sensor.TYPE_ORIENTATION);
+        mySensors.registerListener(mySensorlistener, myAccel, SensorManager.SENSOR_DELAY_FASTEST);
+        mySensors.registerListener(OrientListener, myOrient, SensorManager.SENSOR_DELAY_FASTEST);
 
         local = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         local.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, myLocationListener);
@@ -73,6 +77,7 @@ public class Capture {
         accelValues = new float[3];
         gravity = new float[3];
         locationValues = new double[3];
+        orientationValues = new float[3];
 
         try{
             cam = Camera.open();
@@ -118,7 +123,8 @@ public class Capture {
 
                                 //CaptureActivity location
                                 message = Long.toString(timestamp) + " , " + Double.toString(locationValues[0]) + " , " + Double.toString(locationValues[1]) + " , "
-                                        + Double.toString(locationValues[2]) + "\n";
+                                        + Double.toString(locationValues[2]) + " , " + Float.toString(orientationValues[0]) +
+                                        "\n";
                                 outLocation.write(message.getBytes());
 
 
@@ -260,6 +266,21 @@ public class Capture {
             }
 
 
+        }
+
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+        }
+    };
+
+
+    private SensorEventListener OrientListener = new SensorEventListener() {
+        @Override
+        public void onSensorChanged(SensorEvent event) {
+            orientationValues[0] = event.values[0];
+            orientationValues[1] = event.values[1];
+            orientationValues[2] = event.values[2];
         }
 
         @Override
