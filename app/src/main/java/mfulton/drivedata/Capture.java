@@ -132,6 +132,9 @@ public class Capture {
                                         + Float.toString(accelValues[2]) + " )";
                                 ((TextView) myActivity.findViewById(R.id.accel_indicator)).setText(message);
 
+                                message = "(" + Float.toString(orientationValues[0]) +")";
+                                ((TextView)myActivity.findViewById(R.id.orientation)).setText(message);
+
                                 StatFs stats = new StatFs(directory.getPath());
                                 long bytesPossible = (long) stats.getBlockSize() * (long) stats.getBlockCount();
                                 long bytesAvailable = (long) stats.getBlockSize() * (long) stats.getAvailableBlocks();
