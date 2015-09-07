@@ -26,6 +26,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.Integer;
 
 /**
  * Created by michael on 7/20/15.
@@ -43,7 +44,6 @@ public class Capture {
     private SensorManager mySensors;
     private Sensor myAccel;
     private LocationManager local;
-    private Sensor myOrient;
 
     private float accelValues[];
     private float gravity[];
@@ -62,12 +62,15 @@ public class Capture {
 
         mySensors = (SensorManager)context.getSystemService(Context.SENSOR_SERVICE);
         myAccel = mySensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        myOrient = mySensors.getDefaultSensor(Sensor.TYPE_ORIENTATION);
         mySensors.registerListener(mySensorlistener, myAccel, SensorManager.SENSOR_DELAY_FASTEST);
-        mySensors.registerListener(OrientListener, myOrient, SensorManager.SENSOR_DELAY_FASTEST);
 
         local = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-        local.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, myLocationListener);
+        if(local.isProviderEnabled( LocationManager.GPS_PROVIDER) ){
+            local.requestLocationUpdates ( LocationManager.GPS_PROVIDER, 0 , 0, myLocationListener);
+        }
+        else {
+            local.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, myLocationListener);
+        }
 
         directory = filePrep(null, logName, true);
         imageDir = filePrep(directory, "images", true);
@@ -77,7 +80,7 @@ public class Capture {
         accelValues = new float[3];
         gravity = new float[3];
         locationValues = new double[3];
-        orientationValues = new float[3];
+        orientationValues = new float[4];
 
         try{
             cam = Camera.open();
@@ -123,7 +126,7 @@ public class Capture {
 
                                 //CaptureActivity location
                                 message = Long.toString(timestamp) + " , " + Double.toString(locationValues[0]) + " , " + Double.toString(locationValues[1]) + " , "
-                                        + Double.toString(locationValues[2]) + " , " + Float.toString(orientationValues[0]) +
+                                        + Double.toString(locationValues[2]) + " , " + Double.toString(locationValues[3]) +
                                         "\n";
                                 outLocation.write(message.getBytes());
 
@@ -140,8 +143,9 @@ public class Capture {
                                 long bytesAvailable = (long) stats.getBlockSize() * (long) stats.getAvailableBlocks();
                                 long megsAvailable = bytesAvailable/ 1048576 ;
                                 long megsPossible = bytesPossible/ 1048576;
+                                long percentageFree = megsPossible/megsAvailable *100;
 
-                                message = Long.toString(megsAvailable) + " / " + Long.toString(megsPossible) + " Free";
+                                message = Long.toString(percentageFree) + "%  " + " Free";
 
                                 ((TextView) myActivity.findViewById(R.id.space_remaining)).setText(message);
 
@@ -277,27 +281,13 @@ public class Capture {
         }
     };
 
-
-    private SensorEventListener OrientListener = new SensorEventListener() {
-        @Override
-        public void onSensorChanged(SensorEvent event) {
-            orientationValues[0] = event.values[0];
-            orientationValues[1] = event.values[1];
-            orientationValues[2] = event.values[2];
-        }
-
-        @Override
-        public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
-        }
-    };
-
     private LocationListener myLocationListener = new LocationListener() {
         @Override
         public void onLocationChanged(Location location) {
             locationValues[0] = location.getLatitude();
             locationValues[1] = location.getLongitude();
-            locationValues[2] = location.getAltitude();
+            locationValues[2] = location.getBearing();
+            locationValues[3] = location.getAccuracy();
         }
 
         @Override
