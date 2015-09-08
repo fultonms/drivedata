@@ -43,12 +43,13 @@ public class Capture {
 
     private SensorManager mySensors;
     private Sensor myAccel;
+    private Sensor orient;
     private LocationManager local;
 
     private float accelValues[];
     private float gravity[];
     private double locationValues[];
-    private float orientationValues[];
+    private int orientation;
     private long timestamp;
     private String provider;
 
@@ -64,15 +65,12 @@ public class Capture {
         mySensors = (SensorManager)context.getSystemService(Context.SENSOR_SERVICE);
         myAccel = mySensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         mySensors.registerListener(mySensorlistener, myAccel, SensorManager.SENSOR_DELAY_FASTEST);
+        orient = mySensors.getDefaultSensor(Sensor.TYPE_ORIENTATION);
+        mySensors.registerListener(myOrienter, orient, SensorManager.SENSOR_DELAY_FASTEST);
 
         local = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
 
-        if(local.isProviderEnabled( LocationManager.GPS_PROVIDER) ){
-           provider = LocationManager.GPS_PROVIDER;
-        }
-        else {
-            provider = LocationManager.NETWORK_PROVIDER;
-        }
+        provider = LocationManager.NETWORK_PROVIDER;
 
         directory = filePrep(null, logName, true);
         imageDir = filePrep(directory, "images", true);
@@ -81,8 +79,8 @@ public class Capture {
 
         accelValues = new float[3];
         gravity = new float[3];
-        locationValues = new double[4];
-        locationValues[0]=locationValues[1]=locationValues[2]=locationValues[3]=0;
+        locationValues = new double[5];
+        locationValues[0]=locationValues[1]=locationValues[2]=locationValues[3]=locationValues[4]=0;
 
         try{
             cam = Camera.open();
@@ -124,8 +122,10 @@ public class Capture {
 
                                 locationValues[0] = location.getLatitude();
                                 locationValues[1] = location.getLongitude();
-                                locationValues[2] = location.getBearing();
-                                locationValues[3] = location.getAccuracy();
+                                locationValues[2] = location.getAltitude();
+                                //locationValues[3] = location.getBearing();
+                                orientation = (int) locationValues[3];
+                                locationValues[4] = location.getAccuracy();
 
                                 //CaptureActivity acceleration
                                 String message;
@@ -140,31 +140,27 @@ public class Capture {
                                         + Double.toString(locationValues[0]) + " , "
                                         + Double.toString(locationValues[1]) + " , "
                                         + Double.toString(locationValues[2]) + " , "
-                                        + Double.toString(locationValues[3]) +
+                                        + Integer.toString(orientation) + " , "
+                                        + Double.toString(locationValues[4]) +
                                         "\n";
                                 outLocation.write(message.getBytes());
-                                ((TextView)myActivity.findViewById(R.id.orientation)).setText(message);
 
-                                /*message="( " + Float.toString(accelValues[0]) + ", "
+
+                                message="( " + Float.toString(accelValues[0]) + ", "
                                         + Float.toString(accelValues[1]) + ", "
                                         + Float.toString(accelValues[2]) + " )";
                                 ((TextView) myActivity.findViewById(R.id.accel_indicator)).setText(message);
 
-                                message = "(" + Float.toString(orientationValues[0]) +")";
-                                ((TextView)myActivity.findViewById(R.id.orientation)).setText(message);
-
-
                                 StatFs stats = new StatFs(directory.getPath());
                                 long bytesPossible = (long) stats.getBlockSize() * (long) stats.getBlockCount();
                                 long bytesAvailable = (long) stats.getBlockSize() * (long) stats.getAvailableBlocks();
-                                long megsAvailable = bytesAvailable/ 1048576 ;
+                                long megsAvailable = bytesAvailable/ 1048576;
                                 long megsPossible = bytesPossible/ 1048576;
-                                long percentageFree = megsPossible/megsAvailable *100;
+                                long percentageFree = (megsAvailable/megsPossible) *100;
 
                                 message = Long.toString(percentageFree) + "%  " + " Free";
 
                                 ((TextView) myActivity.findViewById(R.id.space_remaining)).setText(message);
-*/
                             }
 
                         } catch (Exception e) {
@@ -300,6 +296,19 @@ public class Capture {
 
         }
     };
+
+    private SensorEventListener myOrienter = new SensorEventListener() {
+        @Override
+        public void onSensorChanged(SensorEvent event) {
+            locationValues[3] = event.values[0];
+        }
+
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+        }
+    };
+
 
     private Camera.PictureCallback myPicture = new Camera.PictureCallback() {
 
