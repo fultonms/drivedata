@@ -50,6 +50,7 @@ public class Capture {
     private double locationValues[];
     private float orientationValues[];
     private long timestamp;
+    private String provider;
 
     private Camera cam;
     private Preview preview;
@@ -65,11 +66,12 @@ public class Capture {
         mySensors.registerListener(mySensorlistener, myAccel, SensorManager.SENSOR_DELAY_FASTEST);
 
         local = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+
         if(local.isProviderEnabled( LocationManager.GPS_PROVIDER) ){
-            local.requestLocationUpdates ( LocationManager.GPS_PROVIDER, 0 , 0, myLocationListener);
+           provider = LocationManager.GPS_PROVIDER;
         }
         else {
-            local.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, myLocationListener);
+            provider = LocationManager.NETWORK_PROVIDER;
         }
 
         directory = filePrep(null, logName, true);
@@ -79,8 +81,8 @@ public class Capture {
 
         accelValues = new float[3];
         gravity = new float[3];
-        locationValues = new double[3];
-        orientationValues = new float[4];
+        locationValues = new double[4];
+        locationValues[0]=locationValues[1]=locationValues[2]=locationValues[3]=0;
 
         try{
             cam = Camera.open();
@@ -112,31 +114,45 @@ public class Capture {
                     @Override
                     public void run() {
                         try {
-                        //CaptureActivity image
+                            //CaptureActivity image
                             if(cameraSafe) {
                                 cam.takePicture(null, null, myPicture);
                                 cameraSafe = false;
                                 cam.startPreview();
 
+                                Location location = local.getLastKnownLocation(provider);
+
+                                locationValues[0] = location.getLatitude();
+                                locationValues[1] = location.getLongitude();
+                                locationValues[2] = location.getBearing();
+                                locationValues[3] = location.getAccuracy();
+
                                 //CaptureActivity acceleration
                                 String message;
-                                message = Long.toString(timestamp) + " , " + Float.toString(accelValues[0]) + " , " + Float.toString(accelValues[1]) + " , "
+                                message = Long.toString(timestamp) + " , "
+                                        + Float.toString(accelValues[0]) + " , "
+                                        + Float.toString(accelValues[1]) + " , "
                                         + Float.toString(accelValues[2]) + "\n";
                                 outAccel.write(message.getBytes());
 
                                 //CaptureActivity location
-                                message = Long.toString(timestamp) + " , " + Double.toString(locationValues[0]) + " , " + Double.toString(locationValues[1]) + " , "
-                                        + Double.toString(locationValues[2]) + " , " + Double.toString(locationValues[3]) +
+                                message = Long.toString(timestamp) + " , "
+                                        + Double.toString(locationValues[0]) + " , "
+                                        + Double.toString(locationValues[1]) + " , "
+                                        + Double.toString(locationValues[2]) + " , "
+                                        + Double.toString(locationValues[3]) +
                                         "\n";
                                 outLocation.write(message.getBytes());
+                                ((TextView)myActivity.findViewById(R.id.orientation)).setText(message);
 
-
-                                message="( " + Float.toString(accelValues[0]) + ", " + Float.toString(accelValues[1]) + ", "
+                                /*message="( " + Float.toString(accelValues[0]) + ", "
+                                        + Float.toString(accelValues[1]) + ", "
                                         + Float.toString(accelValues[2]) + " )";
                                 ((TextView) myActivity.findViewById(R.id.accel_indicator)).setText(message);
 
                                 message = "(" + Float.toString(orientationValues[0]) +")";
                                 ((TextView)myActivity.findViewById(R.id.orientation)).setText(message);
+
 
                                 StatFs stats = new StatFs(directory.getPath());
                                 long bytesPossible = (long) stats.getBlockSize() * (long) stats.getBlockCount();
@@ -148,11 +164,11 @@ public class Capture {
                                 message = Long.toString(percentageFree) + "%  " + " Free";
 
                                 ((TextView) myActivity.findViewById(R.id.space_remaining)).setText(message);
-
+*/
                             }
 
                         } catch (Exception e) {
-                                Log.e("Capture Loop", e.toString());
+                            Log.e("Capture Loop", e.toString());
                         }
 
                         if (capturing) {
@@ -227,18 +243,22 @@ public class Capture {
             //If we need a directory.
             if (isDirectory) {
                 if (!(result.mkdirs()))
-                    Log.i("Capture filePrep", "Directory " + filename + " already existed at: " + path);
+                    Log.i("Capture filePrep", "Directory "
+                            + filename + " already existed at: " + path);
                 else
-                    Log.i("Capture filePrep", "Directory " + filename + " has been created at: " + path);
+                    Log.i("Capture filePrep", "Directory "
+                            + filename + " has been created at: " + path);
 
             }
 
             //If we need a .log file.
             else {
                 if (!(result.createNewFile()))
-                    Log.i("Capture filePrep", "File " + filename + " already existed at: " + path);
+                    Log.i("Capture filePrep", "File "
+                            + filename + " already existed at: " + path);
                 else
-                    Log.i("Capture filePrep", "File " + filename + " has been created at: " + path);
+                    Log.i("Capture filePrep", "File "
+                            + filename + " has been created at: " + path);
 
             }
 
@@ -281,38 +301,14 @@ public class Capture {
         }
     };
 
-    private LocationListener myLocationListener = new LocationListener() {
-        @Override
-        public void onLocationChanged(Location location) {
-            locationValues[0] = location.getLatitude();
-            locationValues[1] = location.getLongitude();
-            locationValues[2] = location.getBearing();
-            locationValues[3] = location.getAccuracy();
-        }
-
-        @Override
-        public void onStatusChanged(String provider, int status, Bundle extras) {
-
-        }
-
-        @Override
-        public void onProviderEnabled(String provider) {
-            Log.e("Capture", "LocationProvider is available");
-        }
-
-        @Override
-        public void onProviderDisabled(String provider) {
-            Log.e("Capture", "LocationProvider is NOT available");
-        }
-    };
-
     private Camera.PictureCallback myPicture = new Camera.PictureCallback() {
 
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
 
             timestamp = SystemClock.elapsedRealtime();
-            File pictureFile =  new File(imageDir.getPath() +File.separator + logName + "_IMG_" + timestamp + ".jpg");
+            File pictureFile =  new File(imageDir.getPath()
+                    + File.separator + logName + "_IMG_" + timestamp + ".jpg");
             if (pictureFile == null){
                 cameraSafe = true;
                 Log.d("Capture", "Error creating media file, check storage permissions: ");
