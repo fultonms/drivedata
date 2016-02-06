@@ -27,4 +27,17 @@
         android:layout_centerHorizontal="true"
         android:layout_below="@+id/button" />
 
+    <CheckedTextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/system_readiness"
+        android:id="@+id/system_preperation_indicator"
+        android:textSize="25dp"
+        android:textColor="@color/orange"
+        android:checked="false"
+        android:checkMark="?android:attr/listChoiceIndicatorMultiple"
+        android:layout_marginTop="66dp"
+        android:layout_below="@+id/logNameEntry"
+        android:layout_centerHorizontal="true" />
+
 </RelativeLayout>

@@ -1,6 +1,7 @@
 package mfulton.drivedata;
 
 import android.app.Dialog;
+import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v4.app.DialogFragment;
 import android.content.DialogInterface;
@@ -10,7 +11,9 @@ import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.CheckedTextView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
@@ -64,16 +67,14 @@ public class MainMenu extends FragmentActivity
     }
 
     @Override
-    protected void onStart() {
-        googleApiClient.connect();
-        super.onStart();
+    public void onDestroy() {
+        super.onDestroy();
     }
 
     @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putBoolean(STATE_RESOLVING_ERROR, resolvingError);
-        outState.putBoolean(STATE_CRITERIA_MET, criteriaPassed);
+    protected void onStart() {
+        googleApiClient.connect();
+        super.onStart();
     }
 
     @Override
@@ -83,8 +84,20 @@ public class MainMenu extends FragmentActivity
     }
 
     @Override
-    public void onDestroy() {
-        super.onDestroy();
+    protected void onPause(){
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume(){
+        super.onResume();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putBoolean(STATE_RESOLVING_ERROR, resolvingError);
+        outState.putBoolean(STATE_CRITERIA_MET, criteriaPassed);
     }
 
 /*
@@ -97,11 +110,22 @@ public class MainMenu extends FragmentActivity
         TextView logEntry = (TextView) parent.findViewById(R.id.logNameEntry);
         CharSequence logName = logEntry.getText();
         String logString = logName.toString();
+        Context context = getApplicationContext();
+        int toast_duration = Toast.LENGTH_LONG;
 
         if (logString.isEmpty()) {
             logEntry.setError("This field cannot be empty");
             return;
         }
+
+        if (!criteriaPassed){
+            logEntry.setError("Google Location Services still configuring");
+            CharSequence text = "Google Location Services is still configuring, please wait.";
+            Toast toast = Toast.makeText(context, text, toast_duration);
+            toast.show();
+            return;
+        }
+
 
         Log.i("MainMenu", "Log Name is " + logString);
 
@@ -116,6 +140,9 @@ public class MainMenu extends FragmentActivity
 
     @Override
     public void onConnected(Bundle connectionHint) {
+        View view = findViewById(android.R.id.content);
+        final CheckedTextView text =(CheckedTextView) view.findViewById(R.id.system_preperation_indicator);
+
         LocationRequest request = new LocationRequest();
         request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                 .setInterval(5000);
@@ -134,6 +161,9 @@ public class MainMenu extends FragmentActivity
                     case LocationSettingsStatusCodes.SUCCESS:
                         //All location settings are good!
                         criteriaPassed = true;
+                        text.setText("SYSTEM READY ");
+                        text.setTextColor(getResources().getColor(R.color.green));
+                        text.setChecked(true);
                         break;
                     case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
                         //There are some issues.

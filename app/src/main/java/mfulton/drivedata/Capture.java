@@ -36,6 +36,8 @@ public class Capture {
     private File directory, locationFile, imageDir;
     private OutputStream outLocation;
 
+    private long timestamp;
+
     private Camera cam;
     private Preview preview;
     private boolean cameraSafe;
