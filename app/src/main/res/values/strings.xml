@@ -11,5 +11,5 @@
     <string name="fps_entry">Enter data points per second (max 30)</string>
     <string name="logname_entry_default">Enter name for log.</string>
     <string name="title_log_string">Enter a name for this capture.</string>
-    <string name="system_readiness">Currently Preparing System</string>
+    <string name="system_readiness">Preparing System</string>
 </resources>

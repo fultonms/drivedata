@@ -2,6 +2,8 @@ package mfulton.drivedata;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.DialogFragment;
 import android.content.DialogInterface;
@@ -64,10 +66,38 @@ public class MainMenu extends FragmentActivity
         }
         criteriaPassed = savedInstanceState != null && savedInstanceState.getBoolean(STATE_CRITERIA_MET, false);
         resolvingError = savedInstanceState != null && savedInstanceState.getBoolean(STATE_RESOLVING_ERROR, false);
+
+        View view = findViewById(android.R.id.content);
+        final CheckedTextView text =(CheckedTextView) view.findViewById(R.id.system_preperation_indicator);
+
+        Thread t = new Thread(){
+            @Override
+            public void run(){
+                try{
+                    while(!isInterrupted()){
+                        Thread.sleep(1000);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if(criteriaPassed){
+                                    text.setText("SYSTEM READY ");
+                                    text.setTextColor(getResources().getColor(R.color.green));
+                                    text.setChecked(true);
+                                }
+                                else
+                                    return;
+                            }
+                        });
+                    }
+                }catch(InterruptedException e){
+
+                }
+            }
+        };
     }
 
     @Override
-    public void onDestroy() {
+    protected void onDestroy() {
         super.onDestroy();
     }
 
@@ -99,7 +129,6 @@ public class MainMenu extends FragmentActivity
         outState.putBoolean(STATE_RESOLVING_ERROR, resolvingError);
         outState.putBoolean(STATE_CRITERIA_MET, criteriaPassed);
     }
-
 /*
     HANDLERS FOR UI INTERACTIONS
         The following functions handle button presses and other interaction.
@@ -126,23 +155,14 @@ public class MainMenu extends FragmentActivity
             return;
         }
 
-
         Log.i("MainMenu", "Log Name is " + logString);
-
         Intent intent = new Intent(this, CaptureActivity.class);
-        intent.putExtra("logName", logString);
+        SharedPreferences.Editor edit = PreferenceManager.getDefaultSharedPreferences(this).edit();
+        edit.putString("log_name", logString);
+        edit.commit();
         startActivity(intent);
     }
-
-/*
-    CONNECTION HANDLERS FOR GOOGLE API
- */
-
-    @Override
-    public void onConnected(Bundle connectionHint) {
-        View view = findViewById(android.R.id.content);
-        final CheckedTextView text =(CheckedTextView) view.findViewById(R.id.system_preperation_indicator);
-
+    public void checkCriteria(){
         LocationRequest request = new LocationRequest();
         request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                 .setInterval(5000);
@@ -161,9 +181,6 @@ public class MainMenu extends FragmentActivity
                     case LocationSettingsStatusCodes.SUCCESS:
                         //All location settings are good!
                         criteriaPassed = true;
-                        text.setText("SYSTEM READY ");
-                        text.setTextColor(getResources().getColor(R.color.green));
-                        text.setChecked(true);
                         break;
                     case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
                         //There are some issues.
@@ -182,6 +199,15 @@ public class MainMenu extends FragmentActivity
                 }
             }
         });
+    }
+
+/*
+    CONNECTION HANDLERS FOR GOOGLE API
+ */
+
+    @Override
+    public void onConnected(Bundle connectionHint) {
+        checkCriteria();
     }
 
     @Override
@@ -249,7 +275,10 @@ public class MainMenu extends FragmentActivity
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_RESULT_ERROR) {
             resolvingError = false;
-            if (resultCode == RESULT_OK) {
+            if (resultCode == RESULT_OK){
+                if(!criteriaPassed){
+                    checkCriteria();
+                }
                 if (!googleApiClient.isConnecting() &&
                         !googleApiClient.isConnected()) {
                     googleApiClient.connect();
