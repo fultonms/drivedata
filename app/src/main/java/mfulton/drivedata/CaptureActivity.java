@@ -1,18 +1,24 @@
- package mfulton.drivedata;
+package mfulton.drivedata;
 
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.hardware.Camera;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -20,6 +26,10 @@ import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FilePermission;
+import java.io.IOException;
 import java.io.OutputStream;
 
 
@@ -50,7 +60,6 @@ import java.io.OutputStream;
 
      //Constants
      private static final int REQUEST_RESULT_ERROR = 1001; //Request code for errors.
-     private static final int REQUEST_CHECK_SETTINGS = 0x1; //Check settings requet.
      private static final String DIALOG_ERROR = "dialog_error"; //Tag for the error dialog fragment.
      private static final String STATE_RESOLVING_ERROR = "resolving_error"; // Tag for the state resolving state.
      private static final String STATE_CRITERIA_MET = "criteria_met"; //Tag for the criteria met state.
@@ -70,6 +79,26 @@ import java.io.OutputStream;
                      .addOnConnectionFailedListener(this)
                      .build();
          }
+
+         directory = filePrep(null, logName, true);
+         imageDir = filePrep(directory, "images", true);
+         locationFile = filePrep(directory, (logName + "_LOCATION.log"), false);
+
+         try{
+             cam = Camera.open();
+             preview = new Preview(getApplicationContext(), cam);
+             FrameLayout camView = (FrameLayout) findViewById(R.id.camPreview);
+             camView.addView(preview);
+             cam.startPreview();
+         }catch(Exception e){
+             Log.e("Capture", e.toString());
+         }
+
+         try {
+             outLocation = new FileOutputStream(locationFile);
+         }catch (Exception e){
+             Log.e("Capture", e.toString());
+         }
      }
 
      @Override
@@ -85,6 +114,7 @@ import java.io.OutputStream;
 
      @Override
      protected void onStop() {
+         if (isCapturing){endCapture();}
          googleApiClient.disconnect();
          super.onStop();
      }
@@ -112,6 +142,7 @@ import java.io.OutputStream;
 
         if (isCapturing && (recorder.getText().equals("REC"))) {
             recorder.setText("Capture Complete");
+            recorder.setTextColor(getResources().getColor(R.color.green));
             //myCapture.end();
 
             Log.i("CaptureActivity", "Stopping CaptureActivity");
@@ -133,10 +164,14 @@ import java.io.OutputStream;
 
      @Override
      public void onConnected(Bundle connectionHint) {
+         isCapturing = true;
+         beginCapture();
      }
 
      @Override
      public void onConnectionSuspended(int cause) {
+         isCapturing = false;
+         endCapture();
      }
 
      @Override
@@ -158,6 +193,162 @@ import java.io.OutputStream;
 
          }
      }
+ /*
+     FUNCTIONS THAT ACTUALLY DO THE WORK
+      */
+
+     public void beginCapture(){
+         isCapturing = true;
+         cameraSafe = true;
+         Log.i("Capture", "Starting the capture.");
+
+         final Handler handler = new Handler(Looper.getMainLooper());
+         handler.postDelayed(
+                 new Runnable() {
+                     @Override
+                     public void run() {
+                         try {
+                             //CaptureActivity image
+                             if(cameraSafe) {
+                                 cam.takePicture(null, null, myPicture);
+                                 cameraSafe = false;
+                                 cam.startPreview();
+                             }
+                         } catch (Exception e) {
+                             Log.e("Capture Loop", e.toString());
+                         }
+                         if (isCapturing) {
+                             handler.postDelayed(this, 100);
+                         }
+                     }
+                 }, 100);
+
+         //Start Camera CaptureActivity.
+     }
+
+     public void endCapture(){
+         isCapturing = false;
+
+         cam.release();
+         try {
+             outLocation.close();
+         }catch (Exception e){
+             Log.e("Capture", e.toString());
+         }
+
+     }
+
+     //Sets up a file with the appropriate path and creates it if ineescary.
+ public File filePrep(File parent, String filename, boolean isDirectory){
+     File result = null;
+     String path;
+
+     try {
+         //Cheack to see if external storage is available.  If it is, use it.
+         if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())){
+             Log.e("Capture", "Using External Storage");
+             //If no parent is provided, find the documents directory.
+             if (parent == null) {
+                 //path = Environment.getExternalStorageDirectory().getPath();
+                 path = System.getenv("SECONDARY_STORAGE");
+                 path = path + "/DriveDataCaptures";
+             }
+             //Use the provided parent.
+             else {
+                 path = parent.getPath();
+             }
+             //Create a new file.
+             result = new File(path, filename);
+             if(!(result.setReadable(true, false) &&result.setWritable(true, false))){
+                 throw new IOException("Access denied to file.");
+             }
+
+         }
+         //Use the internal storage.
+         else {
+             Log.e("Capture", "Using Internal Storage");
+             //If no parent is provided, get the app file directory.
+             if (parent == null) {
+                 path = getApplicationContext().getFilesDir().getPath();
+             }
+             //Otherwise just use the parent
+             else {
+                 path = parent.getPath();
+             }
+
+             //Create a new file.
+             result = new File(path, filename);
+             if(!(result.setReadable(true, false) &&result.setWritable(true, false))){
+                 throw new IOException("Access denied to file.");
+             }
+         }
+
+         //Now we're going to check to see if directories and files with these paths exist, and
+         //create them if nessecary.
+
+         //If we need a directory.
+         if (isDirectory) {
+             if (!(result.mkdirs()))
+                 Log.i("Capture filePrep", "Directory "
+                         + filename + " already existed at: " + path);
+             else
+                 Log.i("Capture filePrep", "Directory "
+                         + filename + " has been created at: " + path);
+             if(!(result.setReadable(true, false) &&result.setWritable(true, false))){
+                 throw new IOException("Access denied to file.");
+             }
+
+         }
+
+         //If we need a .log file.
+         else {
+             if (!(result.createNewFile()))
+                 Log.i("Capture filePrep", "File "
+                         + filename + " already existed at: " + path);
+             else
+                 Log.i("Capture filePrep", "File "
+                         + filename + " has been created at: " + path);
+
+         }
+
+     }catch(Exception e){
+         //If anything happen, just dump the contents of the exception.
+         Log.e("Capture filePrep", "encountered a problem");
+         Log.e("Capture filePrep", e.toString());
+     }
+
+     //Return the File, tied to a directory of .log file at the correct path..
+     return result;
+ }
+
+     private Camera.PictureCallback myPicture = new Camera.PictureCallback() {
+
+         @Override
+         public void onPictureTaken(byte[] data, Camera camera) {
+
+             timestamp = SystemClock.elapsedRealtime();
+             File pictureFile =  new File(imageDir.getPath()
+                     + File.separator + logName + "_IMG_" + timestamp + ".jpg");
+             cameraSafe = true;
+             try {
+                FileOutputStream fos = new FileOutputStream(pictureFile);
+                fos.write(data);
+                fos.close();
+             } catch (FileNotFoundException e) {
+                Log.d("Capture", "File not found: " + e.getMessage());
+             } catch (IOException e) {
+                Log.d("Capture", "Error accessing file: " + e.getMessage());
+             } catch (Exception e) {
+                Log.e("Capture", e.toString());
+             }
+             cameraSafe= true;
+
+         }
+     };
+
+ /*
+     ERROR HANDLING FUNCTIONS
+ */
 
      //The following functions and inline classes are defined to help resolve connection issues.
      public void showErrorDialog(int errorCode) {
@@ -181,7 +372,7 @@ import java.io.OutputStream;
          }
 
          @Override
-         public Dialog onCreateDialog(Bundle savedInstanceState) {
+         public Dialog onCreateDialog(@NonNull Bundle savedInstanceState) {
              //Get the error code
              int errorCode = this.getArguments().getInt(DIALOG_ERROR);
              return GoogleApiAvailability.getInstance().getErrorDialog(
@@ -208,5 +399,4 @@ import java.io.OutputStream;
              }
          }
      }
-
 }
