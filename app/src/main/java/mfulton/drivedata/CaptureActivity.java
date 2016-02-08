@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.hardware.Camera;
+import android.location.Location;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -24,14 +25,19 @@ import android.widget.TextView;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.location.FusedLocationProviderApi;
+import com.google.android.gms.location.LocationAvailability;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FilePermission;
 import java.io.IOException;
 import java.io.OutputStream;
-
 
  public class CaptureActivity extends FragmentActivity
     implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
@@ -41,15 +47,20 @@ import java.io.OutputStream;
       */
 
      private GoogleApiClient googleApiClient; //The connection client for the Google API.
+     private Handler handler; //The Handler which handles the message que.
 
      //Variables related to the log.
      private String logName; //The name of the current capture.
      private long timestamp; //The current time.
-     private boolean isCapturing; //Whether or not the capture is currently taking place.
+     private boolean isCapturing; //Whether or not the capture is currently taking place
+     private boolean locationReady; // Whether or not the location API is ready.
 
      //Variables related to file i/o
      private File directory, locationFile, imageDir; // The directory, log file for location, and the directory for images.
      private OutputStream outLocation; //
+
+     //Variables for sensor output and sensor managers.
+     private Location newestLocation;
 
      //Variables related to camera use.
      private Camera cam; //The camera object.
@@ -63,14 +74,20 @@ import java.io.OutputStream;
      private static final String DIALOG_ERROR = "dialog_error"; //Tag for the error dialog fragment.
      private static final String STATE_RESOLVING_ERROR = "resolving_error"; // Tag for the state resolving state.
      private static final String STATE_CRITERIA_MET = "criteria_met"; //Tag for the criteria met state.
+/*
+    FUNCTIONS  */
 
      @Override
     protected void onCreate(Bundle savedInstanceState) {
          super.onCreate(savedInstanceState);
          setContentView(R.layout.activity_capture);
 
+         isCapturing = locationReady = false;
+
          SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
          logName = prefs.getString("log_name", "");
+
+         handler = new Handler(Looper.getMainLooper());
 
          if (googleApiClient == null) {
              googleApiClient = new GoogleApiClient.Builder(this)
@@ -79,6 +96,34 @@ import java.io.OutputStream;
                      .addOnConnectionFailedListener(this)
                      .build();
          }
+
+         //Use a new thread to request location updates for the worker thread.
+         //This new thred waits until the result of the request for updates is complete.
+         Thread t = new Thread(){
+             @Override
+             public void run() {
+                 LocationRequest request = new LocationRequest();
+                 request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY).setInterval(5000);
+
+                 LocationCallback locationCallback = new LocationCallback() {
+                     @Override
+                     public void onLocationAvailability(LocationAvailability availability) {
+                         if(!availability.isLocationAvailable()){
+                            locationReady = false;
+                         }
+                     }
+                     public void onLocationResult(LocationResult result) {
+                         newestLocation = result.getLastLocation();
+                     }
+                 };
+
+                 PendingResult<Status> requestResult = LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, request, locationCallback, handler.getLooper());
+                 Status requestStatus=requestResult.await();
+                 if(requestStatus.isSuccess()){
+                     locationReady = true;
+                 }
+             }
+         };
 
          directory = filePrep(null, logName, true);
          imageDir = filePrep(directory, "images", true);
@@ -132,11 +177,6 @@ import java.io.OutputStream;
     UI LISTENERS
 
 */
-    @Override
-    public void onBackPressed(){
-
-    }
-
     public void onClick(View view) {
         TextView recorder = (TextView)findViewById(R.id.recording_indicator);
 
@@ -202,7 +242,6 @@ import java.io.OutputStream;
          cameraSafe = true;
          Log.i("Capture", "Starting the capture.");
 
-         final Handler handler = new Handler(Looper.getMainLooper());
          handler.postDelayed(
                  new Runnable() {
                      @Override
@@ -217,7 +256,7 @@ import java.io.OutputStream;
                          } catch (Exception e) {
                              Log.e("Capture Loop", e.toString());
                          }
-                         if (isCapturing) {
+                         if (isCapturing && locationReady) {
                              handler.postDelayed(this, 100);
                          }
                      }
@@ -399,4 +438,5 @@ import java.io.OutputStream;
              }
          }
      }
+
 }
