@@ -1,4 +1,4 @@
-DRIVEDATA [![Build](https://travis-ci.org/emu4hire/drivedata.svg?branch=master)](https://travis-ci.org/emu4hire/drivedata)
+DRIVEDATA [![Build](https://travis-ci.org/emu4hire/drivedata.svg?branch=development)](https://travis-ci.org/emu4hire/drivedata)
 ===========================
 
 DriveData is a data collection application intended for use in cars (and potentially other vehicles).  The purpose of DriveData is to produce logs of timestamped images from the rear camera, synchronized with location fixes (including at least long/lat, bearing), and instantaneous accelerations around all three axes.
