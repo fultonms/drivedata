@@ -39,41 +39,41 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
- public class CaptureActivity extends FragmentActivity
+public class CaptureActivity extends FragmentActivity
     implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
      /*
         OBJECT VARIABLES
             These variables hold information required by the capture activity.
       */
 
-     private GoogleApiClient googleApiClient; //The connection client for the Google API.
-     private Handler handler; //The Handler which handles the message que.
+    private GoogleApiClient googleApiClient; //The connection client for the Google API.
+    private Handler handler; //The Handler which handles the message que.
 
-     //Variables related to the log.
-     private String logName; //The name of the current capture.
-     private long timestamp; //The current time.
-     private boolean isCapturing; //Whether or not the capture is currently taking place
-     private boolean locationReady; // Whether or not the location API is ready.
+    //Variables related to the log.
+    private String logName; //The name of the current capture.
+    private long timestamp; //The current time.
+    private boolean isCapturing; //Whether or not the capture is currently taking place
+    private boolean locationReady; // Whether or not the location API is ready.
 
-     //Variables related to file i/o
-     private File directory, locationFile, imageDir; // The directory, log file for location, and the directory for images.
-     private OutputStream outLocation; //
+    //Variables related to file i/o
+    private File directory, locationFile, imageDir; // The directory, log file for location, and the directory for images.
+    private OutputStream outLocation; //
 
-     //Variables for sensor output and sensor managers.
-     private Location newestLocation;
+    //Variables for sensor output and sensor managers.
+    private Location newestLocation;
 
-     //Variables related to camera use.
-     private Camera cam; //The camera object.
-     private Preview preview; // The camera preview used to display the current view.
-     private boolean cameraSafe; //A boolean representing whether or not the camera is safe to use.
+    //Variables related to camera use.
+    private Camera cam; //The camera object.
+    private Preview preview; // The camera preview used to display the current view.
+    private boolean cameraSafe; //A boolean representing whether or not the camera is safe to use.
 
-     private boolean resolvingError; //Is the application currently resolving an error.
+    private boolean resolvingError; //Is the application currently resolving an error.
 
-     //Constants
-     private static final int REQUEST_RESULT_ERROR = 1001; //Request code for errors.
-     private static final String DIALOG_ERROR = "dialog_error"; //Tag for the error dialog fragment.
-     private static final String STATE_RESOLVING_ERROR = "resolving_error"; // Tag for the state resolving state.
-     private static final String STATE_CRITERIA_MET = "criteria_met"; //Tag for the criteria met state.
+    //Constants
+    private static final int REQUEST_RESULT_ERROR = 1001; //Request code for errors.
+    private static final String DIALOG_ERROR = "dialog_error"; //Tag for the error dialog fragment.
+    private static final String STATE_RESOLVING_ERROR = "resolving_error"; // Tag for the state resolving state.
+    private static final String STATE_CRITERIA_MET = "criteria_met"; //Tag for the criteria met state.
 /*
     FUNCTIONS  */
 
@@ -98,7 +98,7 @@ import java.io.OutputStream;
          }
 
          //Use a new thread to request location updates for the worker thread.
-         //This new thred waits until the result of the request for updates is complete.
+         //This new thread waits until the result of the request for updates is complete.
          Thread t = new Thread(){
              @Override
              public void run() {
@@ -128,6 +128,13 @@ import java.io.OutputStream;
          directory = filePrep(null, logName, true);
          imageDir = filePrep(directory, "images", true);
          locationFile = filePrep(directory, (logName + "_LOCATION.log"), false);
+
+         try{
+             outLocation = new FileOutputStream(locationFile);
+         }catch( FileNotFoundException e){
+             Log.e("Capture", e.toString());
+         }
+
 
          try{
              cam = Camera.open();
@@ -252,6 +259,31 @@ import java.io.OutputStream;
                                  cam.takePicture(null, null, myPicture);
                                  cameraSafe = false;
                                  cam.startPreview();
+
+                                 String logEntry;
+                                 logEntry = Long.toString(timestamp) + " , "
+                                         + Double.toString(newestLocation.getLatitude()) + " , "
+                                         + Double.toString(newestLocation.getLongitude()) + " , ";
+
+                                 if(newestLocation.hasBearing())
+                                     logEntry = logEntry + Double.toString(newestLocation.getBearing())
+                                                + " , ";
+                                 else
+                                    logEntry = logEntry + "NA" + " , ";
+
+                                 if(newestLocation.hasAltitude())
+                                     logEntry = logEntry + Double.toString(newestLocation.getAltitude())
+                                                + " , ";
+                                 else
+                                    logEntry = logEntry + "NA" + " , ";
+                                 if(newestLocation.hasAccuracy())
+                                     logEntry = logEntry + Double.toString(newestLocation.getAccuracy())
+                                                + " , ";
+                                 else
+                                    logEntry = logEntry + "NA" + " , ";
+
+                                 logEntry = logEntry + "\n";
+                                 outLocation.write(logEntry.getBytes());
                              }
                          } catch (Exception e) {
                              Log.e("Capture Loop", e.toString());
