@@ -57,6 +57,7 @@ public class MainMenu extends FragmentActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_menu);
 
+        //Connect Google API Client.
         if (googleApiClient == null) {
             googleApiClient = new GoogleApiClient.Builder(this)
                     .addApi(LocationServices.API)
@@ -64,12 +65,16 @@ public class MainMenu extends FragmentActivity
                     .addOnConnectionFailedListener(this)
                     .build();
         }
+
+        //Get all saved instance variables.
         criteriaPassed = savedInstanceState != null && savedInstanceState.getBoolean(STATE_CRITERIA_MET, false);
         resolvingError = savedInstanceState != null && savedInstanceState.getBoolean(STATE_RESOLVING_ERROR, false);
 
+        //Get TextView for system readiness.
         View view = findViewById(android.R.id.content);
-        final CheckedTextView text =(CheckedTextView) view.findViewById(R.id.system_preperation_indicator);
+        final CheckedTextView systemReadyText =(CheckedTextView) view.findViewById(R.id.system_preperation_indicator);
 
+        //Thread which updates the readiness text as needed.
         Thread t = new Thread(){
             @Override
             public void run(){
@@ -80,9 +85,9 @@ public class MainMenu extends FragmentActivity
                             @Override
                             public void run() {
                                 if(criteriaPassed){
-                                    text.setText("SYSTEM READY ");
-                                    text.setTextColor(getResources().getColor(R.color.green));
-                                    text.setChecked(true);
+                                    systemReadyText.setText("SYSTEM READY ");
+                                    systemReadyText.setTextColor(getResources().getColor(R.color.green));
+                                    systemReadyText.setChecked(true);
                                 }
                                 else
                                     return;
@@ -134,27 +139,34 @@ public class MainMenu extends FragmentActivity
         The following functions handle button presses and other interaction.
  */
 
+    // Handler for the button to start the capture.
     public void startCapture(View view) {
+        //Acquire the entered capture name.
         View parent = view.getRootView();
         TextView logEntry = (TextView) parent.findViewById(R.id.logNameEntry);
         CharSequence logName = logEntry.getText();
         String logString = logName.toString();
+
         Context context = getApplicationContext();
         int toast_duration = Toast.LENGTH_LONG;
 
         if (logString.isEmpty()) {
             logEntry.setError("This field cannot be empty");
+            logEntry.setError("Must have a capture name!");
+            CharSequence text = "You must enter a capture name.";
+            Toast toast = Toast.makeText(context, text, toast_duration);
+            toast.show();
             return;
         }
 
         if (!criteriaPassed){
-            logEntry.setError("Google Location Services still configuring");
             CharSequence text = "Google Location Services is still configuring, please wait.";
             Toast toast = Toast.makeText(context, text, toast_duration);
             toast.show();
             return;
         }
 
+        //Start the capture activity.
         Log.i("MainMenu", "Log Name is " + logString);
         Intent intent = new Intent(this, CaptureActivity.class);
         SharedPreferences.Editor edit = PreferenceManager.getDefaultSharedPreferences(this).edit();
@@ -162,16 +174,21 @@ public class MainMenu extends FragmentActivity
         edit.commit();
         startActivity(intent);
     }
+
+    //Test the location services to see if they are adequate.
     public void checkCriteria(){
+        //Set up test location reuest.
         LocationRequest request = new LocationRequest();
         request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                 .setInterval(5000);
 
+        //Set up the SettingsRequest framework.
         LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
                 .addLocationRequest(request);
         PendingResult<LocationSettingsResult> result = LocationServices.SettingsApi.
                 checkLocationSettings(googleApiClient, builder.build());
 
+        //Run the actual test.
         result.setResultCallback(new ResultCallback<LocationSettingsResult>() {
             @Override
             public void onResult(@NonNull LocationSettingsResult result) {
@@ -214,6 +231,7 @@ public class MainMenu extends FragmentActivity
     public void onConnectionSuspended(int cause) {
     }
 
+    //Deal with connection failure cases.
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult result) {
         if (resolvingError) {
