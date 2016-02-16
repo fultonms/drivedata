@@ -7,6 +7,10 @@ import android.content.Intent;
 import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.hardware.Camera;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Environment;
@@ -38,6 +42,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.text.DateFormat;
+import java.util.Date;
 
 public class CaptureActivity extends FragmentActivity
     implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
@@ -56,11 +62,17 @@ public class CaptureActivity extends FragmentActivity
     private boolean locationReady; // Whether or not the location API is ready.
 
     //Variables related to file i/o
-    private File directory, locationFile, imageDir; // The directory, log file for location, and the directory for images.
-    private OutputStream outLocation; //
+    private File directory, locationFile, accelFile, imageDir; // The directory, log file for location, and the directory for images.
+    private OutputStream outLocation, outAccel; //
 
     //Variables for sensor output and sensor managers.
     private Location newestLocation;
+
+    //Variables for handling sensor management.
+    private SensorManager sManager;
+    private Sensor lAccel;
+    private SensorEvent newestAccel;
+
 
     //Variables related to camera use.
     private Camera cam; //The camera object.
@@ -97,6 +109,37 @@ public class CaptureActivity extends FragmentActivity
                      .build();
          }
 
+         directory = filePrep(null, logName, true);
+         imageDir = filePrep(directory, "images", true);
+         locationFile = filePrep(directory, (logName + "_LOCATION.log"), false);
+         accelFile = filePrep(directory, (logName + "_ACCEL.log"), false);
+
+         try{
+             DateFormat[] formats = new DateFormat[]{
+                DateFormat.getDateInstance(),
+                DateFormat.getDateTimeInstance(),
+                DateFormat.getTimeInstance(),
+             };
+             outLocation = new FileOutputStream(locationFile);
+             outLocation.write((formats[1].format(new Date(0))).getBytes());
+             outLocation.write(("\nTimestamp || Latitude || Longitude || Bearing || Altitude || Acuracy || Real Time\n").getBytes());
+             outAccel = new FileOutputStream(accelFile);
+             outAccel.write((formats[1].format(new Date(0))).getBytes());
+             outAccel.write(("\nTimestamp || X || Y || Acuracy || Real Time\n").getBytes());
+         }catch( Exception e){
+             Log.e("Capture", e.toString());
+         }
+
+         sManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+         if (sManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION) != null){
+             lAccel = sManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
+             sManager.registerListener(accelListener, lAccel, SensorManager.SENSOR_DELAY_FASTEST);
+         }
+         else{
+             lAccel = null;
+         }
+         lAccel = sManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
+
          //Use a new thread to request location updates for the worker thread.
          //This new thread waits until the result of the request for updates is complete.
          Thread t = new Thread(){
@@ -109,7 +152,7 @@ public class CaptureActivity extends FragmentActivity
                      @Override
                      public void onLocationAvailability(LocationAvailability availability) {
                          if(!availability.isLocationAvailable()){
-                            locationReady = false;
+                             locationReady = false;
                          }
                      }
                      public void onLocationResult(LocationResult result) {
@@ -124,17 +167,6 @@ public class CaptureActivity extends FragmentActivity
                  }
              }
          };
-
-         directory = filePrep(null, logName, true);
-         imageDir = filePrep(directory, "images", true);
-         locationFile = filePrep(directory, (logName + "_LOCATION.log"), false);
-
-         try{
-             outLocation = new FileOutputStream(locationFile);
-         }catch( FileNotFoundException e){
-             Log.e("Capture", e.toString());
-         }
-
 
          try{
              cam = Camera.open();
@@ -260,30 +292,42 @@ public class CaptureActivity extends FragmentActivity
                                  cameraSafe = false;
                                  cam.startPreview();
 
+                                 //Writing Location updates
                                  String logEntry;
                                  logEntry = Long.toString(timestamp) + " , "
                                          + Double.toString(newestLocation.getLatitude()) + " , "
                                          + Double.toString(newestLocation.getLongitude()) + " , ";
 
-                                 if(newestLocation.hasBearing())
+                                 if (newestLocation.hasBearing())
                                      logEntry = logEntry + Double.toString(newestLocation.getBearing())
-                                                + " , ";
+                                             + " , ";
                                  else
-                                    logEntry = logEntry + "NA" + " , ";
+                                     logEntry = logEntry + "NA" + " , ";
 
-                                 if(newestLocation.hasAltitude())
+                                 if (newestLocation.hasAltitude())
                                      logEntry = logEntry + Double.toString(newestLocation.getAltitude())
-                                                + " , ";
+                                             + " , ";
                                  else
-                                    logEntry = logEntry + "NA" + " , ";
-                                 if(newestLocation.hasAccuracy())
+                                     logEntry = logEntry + "NA" + " , ";
+                                 if (newestLocation.hasAccuracy())
                                      logEntry = logEntry + Double.toString(newestLocation.getAccuracy())
-                                                + " , ";
+                                             + " , ";
                                  else
-                                    logEntry = logEntry + "NA" + " , ";
+                                     logEntry = logEntry + "NA" + " , ";
 
+                                 logEntry = logEntry + Long.toString(newestLocation.getTime());
                                  logEntry = logEntry + "\n";
                                  outLocation.write(logEntry.getBytes());
+
+                                 //Writing Accel Updates
+                                 logEntry = "";
+                                 logEntry = Long.toString(timestamp) + " , "
+                                            + Double.toString(newestAccel.values[0]) + " , "
+                                            + Double.toString(newestAccel.values[1]) + " , "
+                                            + Double.toString(newestAccel.values[2]) + " , "
+                                            + Integer.toString(newestAccel.accuracy) + " , "
+                                            + Long.toString(newestAccel.timestamp) + "\n";
+                                 outAccel.write(logEntry.getBytes());
                              }
                          } catch (Exception e) {
                              Log.e("Capture Loop", e.toString());
@@ -392,6 +436,21 @@ public class CaptureActivity extends FragmentActivity
      return result;
  }
 
+    //SensorEvent Listener for linear acceleration.
+    private SensorEventListener accelListener = new SensorEventListener(){
+        @Override
+        public void onSensorChanged(SensorEvent event){
+            newestAccel = event;
+        }
+
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int accuracy){
+            return;
+        }
+
+    };
+
+    // Callback for capturing image.
      private Camera.PictureCallback myPicture = new Camera.PictureCallback() {
 
          @Override
