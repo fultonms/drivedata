@@ -36,17 +36,6 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceLarge"
-            android:text="Accel(0, 0, 0)"
-            android:textSize="10pt"
-            android:textColor= "#33FF33"
-            android:id="@+id/accel_indicator"
-            android:layout_gravity="left|bottom"
-            />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
             android:text="Tap to Record"
             android:textSize="15pt"
             android:textColor= "#FF0000"
@@ -54,21 +43,6 @@
             android:layout_gravity="right|top"
             />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceLarge"
-            android:textSize= "10pt"
-            android:text="Pending"
-            android:id="@+id/space_remaining" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceLarge"
-            android:text="(0)"
-            android:id="@+id/orientation"
-            android:layout_gravity="right|bottom" />
     </FrameLayout>
 
 </RelativeLayout>

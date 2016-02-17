@@ -25,6 +25,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
@@ -52,14 +53,17 @@ public class CaptureActivity extends FragmentActivity
             These variables hold information required by the capture activity.
       */
 
+    //
+    private static String appVersion;
+
     private GoogleApiClient googleApiClient; //The connection client for the Google API.
+    private boolean clientReady; // Is the client ready for capture?
     private Handler handler; //The Handler which handles the message que.
 
     //Variables related to the log.
     private String logName; //The name of the current capture.
     private long timestamp; //The current time.
     private boolean isCapturing; //Whether or not the capture is currently taking place
-    private boolean locationReady; // Whether or not the location API is ready.
 
     //Variables related to file i/o
     private File directory, locationFile, accelFile, imageDir; // The directory, log file for location, and the directory for images.
@@ -67,11 +71,13 @@ public class CaptureActivity extends FragmentActivity
 
     //Variables for sensor output and sensor managers.
     private Location newestLocation;
+    private boolean locationReady; // Whether or not the location API is ready.
 
     //Variables for handling sensor management.
     private SensorManager sManager;
     private Sensor lAccel;
     private SensorEvent newestAccel;
+    private boolean accelReady; // Whether or not the acceleration sensors are ready.
 
 
     //Variables related to camera use.
@@ -94,7 +100,7 @@ public class CaptureActivity extends FragmentActivity
          super.onCreate(savedInstanceState);
          setContentView(R.layout.activity_capture);
 
-         isCapturing = locationReady = false;
+         isCapturing = clientReady = locationReady = accelReady = false;
 
          SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
          logName = prefs.getString("log_name", "");
@@ -125,7 +131,7 @@ public class CaptureActivity extends FragmentActivity
              outLocation.write(("\nTimestamp || Latitude || Longitude || Bearing || Altitude || Acuracy || Real Time\n").getBytes());
              outAccel = new FileOutputStream(accelFile);
              outAccel.write((formats[1].format(new Date(0))).getBytes());
-             outAccel.write(("\nTimestamp || X || Y || Acuracy || Real Time\n").getBytes());
+             outAccel.write(("\nTimestamp || X || Y || Z || Acuracy || Real Time\n").getBytes());
          }catch( Exception e){
              Log.e("Capture", e.toString());
          }
@@ -134,9 +140,11 @@ public class CaptureActivity extends FragmentActivity
          if (sManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION) != null){
              lAccel = sManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
              sManager.registerListener(accelListener, lAccel, SensorManager.SENSOR_DELAY_FASTEST);
+             accelReady = true;
          }
          else{
              lAccel = null;
+             accelReady = false;
          }
          lAccel = sManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
 
@@ -222,14 +230,33 @@ public class CaptureActivity extends FragmentActivity
         if (isCapturing && (recorder.getText().equals("REC"))) {
             recorder.setText("Capture Complete");
             recorder.setTextColor(getResources().getColor(R.color.green));
-            //myCapture.end();
+            endCapture();
 
             Log.i("CaptureActivity", "Stopping CaptureActivity");
 
         }else if(!isCapturing) {
-            recorder.setText("REC");
-            //myCapture.begin();
-            Log.i("CaptureActivity", "Starting CaptureActivity");
+            if(clientReady && locationReady && accelReady) {
+                recorder.setText("REC");
+                beginCapture();
+                Log.i("CaptureActivity", "Starting CaptureActivity");
+            }
+            else{
+                Context context = getApplicationContext();
+                int toast_duration = Toast.LENGTH_LONG;
+                CharSequence text = "An unkown error is preventing capture beginning.";
+                Toast toast;
+
+                if (!clientReady)
+                    text = "Google Play Services not ready, please wait a moment";
+                else if (!locationReady)
+                    text = "Google Location Services not ready, please wait a moment";
+                else if (!accelReady)
+                    text = "Acceleration sensors calibrating, please wait.";
+
+                toast = Toast.makeText(context, text, toast_duration);
+                toast.show();
+
+            }
         }
 
         else{
@@ -243,8 +270,8 @@ public class CaptureActivity extends FragmentActivity
 
      @Override
      public void onConnected(Bundle connectionHint) {
-         isCapturing = true;
-         beginCapture();
+         Log.i("CaptureActivity", "onConnected called");
+         clientReady = true;
      }
 
      @Override
@@ -279,6 +306,7 @@ public class CaptureActivity extends FragmentActivity
      public void beginCapture(){
          isCapturing = true;
          cameraSafe = true;
+
          Log.i("Capture", "Starting the capture.");
 
          handler.postDelayed(
@@ -292,42 +320,52 @@ public class CaptureActivity extends FragmentActivity
                                  cameraSafe = false;
                                  cam.startPreview();
 
-                                 //Writing Location updates
                                  String logEntry;
-                                 logEntry = Long.toString(timestamp) + " , "
-                                         + Double.toString(newestLocation.getLatitude()) + " , "
-                                         + Double.toString(newestLocation.getLongitude()) + " , ";
+                                 if(newestLocation != null) {
+                                     //Writing Location updates
+                                     logEntry = Long.toString(timestamp) + " , "
+                                             + Double.toString(newestLocation.getLatitude()) + " , "
+                                             + Double.toString(newestLocation.getLongitude()) + " , ";
 
-                                 if (newestLocation.hasBearing())
-                                     logEntry = logEntry + Double.toString(newestLocation.getBearing())
-                                             + " , ";
-                                 else
-                                     logEntry = logEntry + "NA" + " , ";
+                                     if (newestLocation.hasBearing())
+                                         logEntry = logEntry + Double.toString(newestLocation.getBearing())
+                                                 + " , ";
+                                     else
+                                         logEntry = logEntry + "NA" + " , ";
 
-                                 if (newestLocation.hasAltitude())
-                                     logEntry = logEntry + Double.toString(newestLocation.getAltitude())
-                                             + " , ";
-                                 else
-                                     logEntry = logEntry + "NA" + " , ";
-                                 if (newestLocation.hasAccuracy())
-                                     logEntry = logEntry + Double.toString(newestLocation.getAccuracy())
-                                             + " , ";
-                                 else
-                                     logEntry = logEntry + "NA" + " , ";
+                                     if (newestLocation.hasAltitude())
+                                         logEntry = logEntry + Double.toString(newestLocation.getAltitude())
+                                                 + " , ";
+                                     else
+                                         logEntry = logEntry + "NA" + " , ";
+                                     if (newestLocation.hasAccuracy())
+                                         logEntry = logEntry + Double.toString(newestLocation.getAccuracy())
+                                                 + " , ";
+                                     else
+                                         logEntry = logEntry + "NA" + " , ";
 
-                                 logEntry = logEntry + Long.toString(newestLocation.getTime());
-                                 logEntry = logEntry + "\n";
-                                 outLocation.write(logEntry.getBytes());
+                                     logEntry = logEntry + Long.toString(newestLocation.getTime());
+                                     logEntry = logEntry + "\n";
+                                     outLocation.write(logEntry.getBytes());
+                                 }
+                                 else{
+                                     outLocation.write(("LOCATION NULL").getBytes());
+                                 }
 
-                                 //Writing Accel Updates
-                                 logEntry = "";
-                                 logEntry = Long.toString(timestamp) + " , "
-                                            + Double.toString(newestAccel.values[0]) + " , "
-                                            + Double.toString(newestAccel.values[1]) + " , "
-                                            + Double.toString(newestAccel.values[2]) + " , "
-                                            + Integer.toString(newestAccel.accuracy) + " , "
-                                            + Long.toString(newestAccel.timestamp) + "\n";
-                                 outAccel.write(logEntry.getBytes());
+                                 if(newestAccel != null) {
+                                     //Writing Accel Updates
+                                     logEntry = "";
+                                     logEntry = Long.toString(timestamp) + " , "
+                                             + Double.toString(newestAccel.values[0]) + " , "
+                                             + Double.toString(newestAccel.values[1]) + " , "
+                                             + Double.toString(newestAccel.values[2]) + " , "
+                                             + Integer.toString(newestAccel.accuracy) + " , "
+                                             + Long.toString(newestAccel.timestamp) + "\n";
+                                     outAccel.write(logEntry.getBytes());
+                                 }
+                                 else{
+                                     outAccel.write(("ACCELERATION NULL").getBytes());
+                                 }
                              }
                          } catch (Exception e) {
                              Log.e("Capture Loop", e.toString());
