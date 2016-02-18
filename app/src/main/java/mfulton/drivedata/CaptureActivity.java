@@ -148,34 +148,6 @@ public class CaptureActivity extends FragmentActivity
          }
          lAccel = sManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
 
-         //Use a new thread to request location updates for the worker thread.
-         //This new thread waits until the result of the request for updates is complete.
-         Thread t = new Thread(){
-             @Override
-             public void run() {
-                 LocationRequest request = new LocationRequest();
-                 request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY).setInterval(5000);
-
-                 LocationCallback locationCallback = new LocationCallback() {
-                     @Override
-                     public void onLocationAvailability(LocationAvailability availability) {
-                         if(!availability.isLocationAvailable()){
-                             locationReady = false;
-                         }
-                     }
-                     public void onLocationResult(LocationResult result) {
-                         newestLocation = result.getLastLocation();
-                     }
-                 };
-
-                 PendingResult<Status> requestResult = LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, request, locationCallback, handler.getLooper());
-                 Status requestStatus=requestResult.await();
-                 if(requestStatus.isSuccess()){
-                     locationReady = true;
-                 }
-             }
-         };
-
          try{
              cam = Camera.open();
              preview = new Preview(getApplicationContext(), cam);
@@ -272,6 +244,42 @@ public class CaptureActivity extends FragmentActivity
      public void onConnected(Bundle connectionHint) {
          Log.i("CaptureActivity", "onConnected called");
          clientReady = true;
+
+         //Use a new thread to request location updates for the worker thread.
+         //This new thread waits until the result of the request for updates is complete.
+         Runnable r = new Runnable(){
+             @Override
+             public void run() {
+                 LocationRequest request = new LocationRequest();
+                 request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY).setInterval(5000);
+
+                 LocationCallback locationCallback = new LocationCallback() {
+                     @Override
+                     public void onLocationAvailability(LocationAvailability availability) {
+                         if (!availability.isLocationAvailable()) {
+                             locationReady = false;
+                         }
+                     }
+
+                     public void onLocationResult(LocationResult result) {
+                         newestLocation = result.getLastLocation();
+                     }
+                 };
+
+                 Log.e("CaptureActivity", "Sending request for location updates");
+                 PendingResult<Status> requestResult = LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, request, locationCallback, handler.getLooper());
+                 Status requestStatus = requestResult.await();
+                 Log.e("CaptureActivity", "Location update request result receieved");
+                 locationReady = true;
+                 if(requestStatus.isSuccess()) {
+                     locationReady = true;
+                     Log.e("CaptureActivity", "Location update request result success!");
+                 }else {
+                     Log.e("CaptureActivity", "Location update request result: failure!");
+                 }
+             }
+         };
+         new Thread(r).start();
      }
 
      @Override
