@@ -126,9 +126,11 @@ public class CaptureActivity extends FragmentActivity
                 DateFormat.getDateTimeInstance(),
                 DateFormat.getTimeInstance(),
              };
+
              outLocation = new FileOutputStream(locationFile);
              outLocation.write((formats[1].format(new Date(0))).getBytes());
              outLocation.write(("\nTimestamp || Latitude || Longitude || Bearing || Altitude || Acuracy || Real Time\n").getBytes());
+
              outAccel = new FileOutputStream(accelFile);
              outAccel.write((formats[1].format(new Date(0))).getBytes());
              outAccel.write(("\nTimestamp || X || Y || Z || Acuracy || Real Time\n").getBytes());
@@ -155,12 +157,6 @@ public class CaptureActivity extends FragmentActivity
              camView.addView(preview);
              cam.startPreview();
          }catch(Exception e){
-             Log.e("Capture", e.toString());
-         }
-
-         try {
-             outLocation = new FileOutputStream(locationFile);
-         }catch (Exception e){
              Log.e("Capture", e.toString());
          }
      }
@@ -266,16 +262,14 @@ public class CaptureActivity extends FragmentActivity
                      }
                  };
 
-                 Log.e("CaptureActivity", "Sending request for location updates");
                  PendingResult<Status> requestResult = LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, request, locationCallback, handler.getLooper());
                  Status requestStatus = requestResult.await();
-                 Log.e("CaptureActivity", "Location update request result receieved");
                  locationReady = true;
                  if(requestStatus.isSuccess()) {
                      locationReady = true;
-                     Log.e("CaptureActivity", "Location update request result success!");
+                     Log.i("CaptureActivity", "Location update request result success!");
                  }else {
-                     Log.e("CaptureActivity", "Location update request result: failure!");
+                     Log.i("CaptureActivity", "Location update request result: failure!");
                  }
              }
          };
@@ -407,7 +401,7 @@ public class CaptureActivity extends FragmentActivity
      try {
          //Cheack to see if external storage is available.  If it is, use it.
          if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())){
-             Log.e("Capture", "Using External Storage");
+             Log.i("Capture", "Using External Storage");
              //If no parent is provided, find the documents directory.
              if (parent == null) {
                  //path = Environment.getExternalStorageDirectory().getPath();
@@ -420,14 +414,10 @@ public class CaptureActivity extends FragmentActivity
              }
              //Create a new file.
              result = new File(path, filename);
-             if(!(result.setReadable(true, false) &&result.setWritable(true, false))){
-                 throw new IOException("Access denied to file.");
-             }
-
          }
          //Use the internal storage.
          else {
-             Log.e("Capture", "Using Internal Storage");
+             Log.i("Capture", "Using Internal Storage");
              //If no parent is provided, get the app file directory.
              if (parent == null) {
                  path = getApplicationContext().getFilesDir().getPath();
@@ -439,9 +429,6 @@ public class CaptureActivity extends FragmentActivity
 
              //Create a new file.
              result = new File(path, filename);
-             if(!(result.setReadable(true, false) &&result.setWritable(true, false))){
-                 throw new IOException("Access denied to file.");
-             }
          }
 
          //Now we're going to check to see if directories and files with these paths exist, and
@@ -455,10 +442,6 @@ public class CaptureActivity extends FragmentActivity
              else
                  Log.i("Capture filePrep", "Directory "
                          + filename + " has been created at: " + path);
-             if(!(result.setReadable(true, false) &&result.setWritable(true, false))){
-                 throw new IOException("Access denied to file.");
-             }
-
          }
 
          //If we need a .log file.
@@ -472,7 +455,12 @@ public class CaptureActivity extends FragmentActivity
 
          }
 
-     }catch(Exception e){
+         //Set file permissions
+         if(!(result.setReadable(true, true) &&result.setWritable(true, true))) {
+             throw new IOException(("Access denied to:" + result.getName()));
+         }
+
+         }catch(Exception e){
          //If anything happen, just dump the contents of the exception.
          Log.e("Capture filePrep", "encountered a problem");
          Log.e("Capture filePrep", e.toString());
