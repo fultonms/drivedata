@@ -404,8 +404,7 @@ public class CaptureActivity extends FragmentActivity
              Log.i("Capture", "Using External Storage");
              //If no parent is provided, find the documents directory.
              if (parent == null) {
-                 //path = Environment.getExternalStorageDirectory().getPath();
-                 path = System.getenv("SECONDARY_STORAGE");
+                 path = Environment.getExternalStorageDirectory().getPath();
                  path = path + "/DriveDataCaptures";
              }
              //Use the provided parent.
