@@ -45,6 +45,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.text.DateFormat;
 import java.util.Date;
+import java.util.List;
+import java.util.Timer;
+import java.util.Vector;
 
 public class CaptureActivity extends FragmentActivity
     implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
@@ -78,6 +81,7 @@ public class CaptureActivity extends FragmentActivity
     private Sensor lAccel;
     private SensorEvent newestAccel;
     private boolean accelReady; // Whether or not the acceleration sensors are ready.
+    private float[] offsets = {0,0,0};
 
 
     //Variables related to camera use.
@@ -308,6 +312,37 @@ public class CaptureActivity extends FragmentActivity
          isCapturing = true;
          cameraSafe = true;
 
+         TextView text = (TextView) findViewById(R.id.centerText);
+         text.setText("STAY STILL -- CALIBRATING");
+         text.setTextColor(getResources().getColor(R.color.red));
+         Log.i("CaptureActivity", "Callibrating LinearAcceleration sensor ");
+
+
+         long endTime = System.currentTimeMillis() + 5000;
+         Vector<Float> rawX = new Vector<Float>();
+         Vector<Float> rawY = new Vector<Float>();
+         Vector<Float> rawZ = new Vector<Float>();
+
+         while(System.currentTimeMillis() < endTime){
+            rawX.add(newestAccel.values[0]);
+            rawY.add(newestAccel.values[1]);
+            rawZ.add(newestAccel.values[2]);
+         }
+
+         text.setText("CALIBRATION COMPLETE");
+
+         for(int i=0; i<rawX.size(); i++){
+             offsets[0] += rawX.get(i);
+             offsets[1] += rawY.get(i);
+             offsets[2] += rawZ.get(i);
+         }
+
+         offsets[0] = offsets[0]/rawX.size();
+         offsets[1] = offsets[1]/rawY.size();
+         offsets[2] = offsets[2]/rawZ.size();
+
+         text.setText("");
+
          Log.i("Capture", "Starting the capture.");
 
          handler.postDelayed(
@@ -356,9 +391,9 @@ public class CaptureActivity extends FragmentActivity
                                      //Writing Accel Updates
                                      logEntry = "";
                                      logEntry = Long.toString(timestamp) + " , "
-                                             + Double.toString(newestAccel.values[0]) + " , "
-                                             + Double.toString(newestAccel.values[1]) + " , "
-                                             + Double.toString(newestAccel.values[2]) + " , "
+                                             + Double.toString(newestAccel.values[0] - offsets[0]) + " , "
+                                             + Double.toString(newestAccel.values[1] - offsets[1]) + " , "
+                                             + Double.toString(newestAccel.values[2] - offsets[2]) + " , "
                                              + Integer.toString(newestAccel.accuracy) + " , "
                                              + Long.toString(newestAccel.timestamp) + "\n";
                                      outAccel.write(logEntry.getBytes());
