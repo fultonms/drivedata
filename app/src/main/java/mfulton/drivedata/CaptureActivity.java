@@ -150,12 +150,11 @@ public class CaptureActivity extends FragmentActivity
          }
          lAccel = sManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
 
-         try{
+         try {
              cam = Camera.open();
              preview = new Preview(getApplicationContext(), cam);
              FrameLayout camView = (FrameLayout) findViewById(R.id.camPreview);
              camView.addView(preview);
-             cam.startPreview();
          }catch(Exception e){
              Log.e("Capture", e.toString());
          }
@@ -320,7 +319,6 @@ public class CaptureActivity extends FragmentActivity
                              if(cameraSafe) {
                                  cam.takePicture(null, null, myPicture);
                                  cameraSafe = false;
-                                 cam.startPreview();
 
                                  String logEntry;
                                  if(newestLocation != null) {
@@ -488,11 +486,10 @@ public class CaptureActivity extends FragmentActivity
 
          @Override
          public void onPictureTaken(byte[] data, Camera camera) {
-
+             camera.startPreview();
              timestamp = SystemClock.elapsedRealtime();
              File pictureFile =  new File(imageDir.getPath()
                      + File.separator + logName + "_IMG_" + timestamp + ".jpg");
-             cameraSafe = true;
              try {
                 FileOutputStream fos = new FileOutputStream(pictureFile);
                 fos.write(data);
