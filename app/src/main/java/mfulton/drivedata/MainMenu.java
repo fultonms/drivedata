@@ -72,35 +72,6 @@ public class MainMenu extends FragmentActivity
         criteriaPassed = savedInstanceState != null && savedInstanceState.getBoolean(STATE_CRITERIA_MET, false);
         resolvingError = savedInstanceState != null && savedInstanceState.getBoolean(STATE_RESOLVING_ERROR, false);
 
-        //Get TextView for system readiness.
-        View view = findViewById(android.R.id.content);
-        final CheckedTextView systemReadyText =(CheckedTextView) view.findViewById(R.id.system_preperation_indicator);
-
-        //Thread which updates the readiness text as needed.
-        Thread t = new Thread(){
-            @Override
-            public void run(){
-                try{
-                    while(!isInterrupted()){
-                        Thread.sleep(1000);
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                if(criteriaPassed){
-                                    systemReadyText.setText("SYSTEM READY ");
-                                    systemReadyText.setTextColor(getResources().getColor(R.color.green));
-                                    systemReadyText.setChecked(true);
-                                }
-                                else
-                                    return;
-                            }
-                        });
-                    }
-                }catch(InterruptedException e){
-
-                }
-            }
-        };
     }
 
     @Override
