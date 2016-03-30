@@ -199,7 +199,7 @@ public class Capture {
 
             timestamp = SystemClock.elapsedRealtime();
             File pictureFile =  new File(imageDir.getPath()
-                    + File.separator + logName + "_IMG_" + timestamp + ".jpg");
+                    + File.separator + "IMG_" + timestamp + ".jpg");
             if (pictureFile == null){
                 cameraSafe = true;
                 Log.d("Capture", "Error creating media file, check storage permissions: ");

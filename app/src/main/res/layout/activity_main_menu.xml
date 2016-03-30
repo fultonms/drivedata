@@ -20,7 +20,7 @@
         android:onClick="startCapture"
         android:layout_above="@+id/settings"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="100dp" />
+        android:layout_marginBottom="125dp" />
 
     <Button
         android:id="@+id/settings"

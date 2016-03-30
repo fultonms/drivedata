@@ -6,14 +6,8 @@
         android:bottomLeftRadius="0dp"
         android:bottomRightRadius="0dp"
         />
-    <gradient
-        android:angle="45"
-        android:centerX="15%"
-        android:centerColor="@color/material_deep_teal_200"
-        android:startColor="@color/button_material_light"
-        android:endColor="@color/material_deep_teal_500"
-        android:type="linear"
-        />
+    <solid
+        android:color="@color/material_deep_teal_500"/>
     <padding
         android:left="0dp"
         android:top="0dp"

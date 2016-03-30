@@ -30,6 +30,8 @@ import com.google.android.gms.location.LocationSettingsResult;
 import com.google.android.gms.location.LocationSettingsStates;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 
+import java.text.SimpleDateFormat;
+
 public class MainMenu extends FragmentActivity
         implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
     /*
@@ -141,23 +143,11 @@ public class MainMenu extends FragmentActivity
 
     // Handler for the button to start the capture.
     public void startCapture(View view) {
-        //Acquire the entered capture name.
-        View parent = view.getRootView();
-        TextView logEntry = (TextView) parent.findViewById(R.id.logNameEntry);
-        CharSequence logName = logEntry.getText();
-        String logString = logName.toString();
+        String logString= "CAPTURE";
+        logString = logString + new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new java.util.Date()) + "--";
 
         Context context = getApplicationContext();
         int toast_duration = Toast.LENGTH_LONG;
-
-        if (logString.isEmpty()) {
-            logEntry.setError("This field cannot be empty");
-            logEntry.setError("Must have a capture name!");
-            CharSequence text = "You must enter a capture name.";
-            Toast toast = Toast.makeText(context, text, toast_duration);
-            toast.show();
-            return;
-        }
 
         if (!criteriaPassed){
             CharSequence text = "Google Location Services is still configuring, please wait.";
