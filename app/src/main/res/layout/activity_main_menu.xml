@@ -4,40 +4,54 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     android:paddingBottom="@dimen/activity_vertical_margin"
+    android:background="@color/button_material_light"
     tools:context=".MainMenu"
     >
 
     <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/menu_button_string"
         android:id="@+id/button"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="60dp"
-        android:onClick="startCapture"/>
 
-    <EditText
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/logNameEntry"
-        android:layout_marginTop="35dp"
-        android:inputType="text"
-        android:hint="Enter a name for this capture."
+        android:text="Begin Capture"
+        android:textColor="#FFFFFF"
+        android:textSize="30sp"
+        android:layout_width=   "350dp"
+        android:layout_height="75dp"
+        android:background="@drawable/begin_capture"
+        android:onClick="startCapture"
+        android:layout_above="@+id/settings"
         android:layout_centerHorizontal="true"
-        android:layout_below="@+id/button" />
+        android:layout_marginBottom="100dp" />
 
-    <CheckedTextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/system_readiness"
-        android:id="@+id/system_preperation_indicator"
-        android:textSize="25dp"
-        android:textColor="@color/orange"
-        android:checked="false"
-        android:checkMark="?android:attr/listChoiceIndicatorMultiple"
-        android:layout_marginTop="66dp"
-        android:layout_below="@+id/logNameEntry"
-        android:layout_centerHorizontal="true" />
+    <Button
+        android:id="@+id/settings"
+
+        android:text="Settings"
+        android:textColor="#FFFFFF"
+        android:textSize="30sp"
+
+        android:layout_width="175dp"
+        android:layout_height="150dp"
+        android:background="@drawable/settings_button"
+        android:shadowRadius="5"
+        android:layout_alignParentBottom="true"
+        android:layout_alignRight="@+id/button"
+        android:layout_alignEnd="@+id/button"
+        android:layout_marginBottom="39dp"
+        />
+
+    <Button
+        android:id="@+id/capture_maanger"
+
+        android:text="Captures"
+        android:textColor="#FFFFFF"
+        android:textSize="30sp"
+
+        android:layout_width="175dp"
+        android:layout_height="150dp"
+        android:background="@drawable/capture_manager"
+        android:layout_alignTop="@+id/settings"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
 
 </RelativeLayout>
