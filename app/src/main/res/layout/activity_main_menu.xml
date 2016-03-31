@@ -29,7 +29,7 @@
         android:textColor="#FFFFFF"
         android:textSize="30sp"
 
-        android:layout_width="175dp"
+        android:layout_width="155dp"
         android:layout_height="150dp"
         android:background="@drawable/settings_button"
         android:shadowRadius="5"
@@ -46,12 +46,13 @@
         android:textColor="#FFFFFF"
         android:textSize="30sp"
 
-        android:layout_width="175dp"
+        android:layout_width="150dp"
         android:layout_height="150dp"
         android:background="@drawable/capture_manager"
         android:layout_alignTop="@+id/settings"
         android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true" />
+        android:layout_alignParentStart="true"
+        android:onClick="captureManager"/>
 
 
 </RelativeLayout>

@@ -114,7 +114,7 @@ public class MainMenu extends FragmentActivity
 
     // Handler for the button to start the capture.
     public void startCapture(View view) {
-        String logString= "CAPTURE";
+        String logString= "CAPTURE--";
         logString = logString + new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new java.util.Date()) + "--";
 
         Context context = getApplicationContext();
@@ -133,6 +133,11 @@ public class MainMenu extends FragmentActivity
         SharedPreferences.Editor edit = PreferenceManager.getDefaultSharedPreferences(this).edit();
         edit.putString("log_name", logString);
         edit.commit();
+        startActivity(intent);
+    }
+
+    public void captureManager(View view){
+        Intent intent = new Intent(this, CaptureManager.class);
         startActivity(intent);
     }
 
