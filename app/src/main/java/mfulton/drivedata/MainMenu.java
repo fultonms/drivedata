@@ -115,7 +115,7 @@ public class MainMenu extends FragmentActivity
     // Handler for the button to start the capture.
     public void startCapture(View view) {
         String logString= "CAPTURE--";
-        logString = logString + new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new java.util.Date()) + "--";
+        logString = logString + new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new java.util.Date());
 
         Context context = getApplicationContext();
         int toast_duration = Toast.LENGTH_LONG;
