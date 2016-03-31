@@ -141,6 +141,11 @@ public class MainMenu extends FragmentActivity
         startActivity(intent);
     }
 
+    public void settingsStart(View  view){
+        Intent intent = new Intent(this, Settings.class);
+        startActivity(intent);
+    }
+
     //Test the location services to see if they are adequate.
     public void checkCriteria(){
         //Set up test location reuest.
