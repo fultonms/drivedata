@@ -1,5 +1,6 @@
 package mfulton.drivedata;
 
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -207,8 +208,8 @@ public class CaptureActivity extends FragmentActivity
 
         }else if(!isCapturing) {
             if(clientReady && locationReady && accelReady) {
-                recorder.setText("REC");
-                beginCapture();
+                recorder.setText("       REC");
+                beginCapture(view.getContext());
                 Log.i("CaptureActivity", "Starting CaptureActivity");
             }
             else{
@@ -308,14 +309,21 @@ public class CaptureActivity extends FragmentActivity
      FUNCTIONS THAT ACTUALLY DO THE WORK
       */
 
-     public void beginCapture(){
+     public void beginCapture(Context context){
          isCapturing = true;
          cameraSafe = true;
 
-         TextView text = (TextView) findViewById(R.id.centerText);
-         text.setText("STAY STILL -- CALIBRATING");
-         text.setTextColor(getResources().getColor(R.color.red));
          Log.i("CaptureActivity", "Callibrating LinearAcceleration sensor ");
+         final TextView calibNotify= (TextView) findViewById(R.id.calibrationText);
+
+         Activity act = (Activity)context;
+         act.runOnUiThread(new Runnable() {
+             @Override
+             public void run() {
+                 calibNotify.setVisibility(View.VISIBLE);
+             }
+         });
+
 
 
          long endTime = System.currentTimeMillis() + 5000;
@@ -328,8 +336,12 @@ public class CaptureActivity extends FragmentActivity
             rawY.add(newestAccel.values[1]);
             rawZ.add(newestAccel.values[2]);
          }
-
-         text.setText("CALIBRATION COMPLETE");
+         act.runOnUiThread(new Runnable() {
+             @Override
+             public void run() {
+                 calibNotify.setText("Drive.");
+             }
+         });
 
          for(int i=0; i<rawX.size(); i++){
              offsets[0] += rawX.get(i);
@@ -341,7 +353,7 @@ public class CaptureActivity extends FragmentActivity
          offsets[1] = offsets[1]/rawY.size();
          offsets[2] = offsets[2]/rawZ.size();
 
-         text.setText("");
+         calibNotify.setVisibility(View.GONE);
 
          Log.i("Capture", "Starting the capture.");
 

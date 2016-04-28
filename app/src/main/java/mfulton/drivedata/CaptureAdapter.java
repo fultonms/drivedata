@@ -6,21 +6,24 @@ import android.graphics.BitmapFactory;
 import android.media.Image;
 import android.os.Build;
 import android.os.StatFs;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Adapter;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
 
 /**
  * Created by michael on 3/31/2016.
  */
-public class CaptureAdapter extends BaseAdapter {
+public class CaptureAdapter extends BaseAdapter{
     private final Context context;
     private final File[] values;
 
@@ -40,12 +43,37 @@ public class CaptureAdapter extends BaseAdapter {
 
         TextView name = (TextView) rowView.findViewById(R.id.captureName);
         TextView description = (TextView) rowView.findViewById(R.id.captureDescription);
+        Button delete = (Button) rowView.findViewById(R.id.deleteBut);
+
+        final int pos = position;
 
         //Bitmap image = BitmapFactory.decodeFile(new File(values[position].getPath() + "/images/").listFiles()[0].getPath());
         //ImageView icon = (ImageView) rowView.findViewById(R.id.icon);
         //icon.setImageBitmap(image);
 
         name.setText(values[position].getName());
+
+       /*if(values[position].getName().contains("CAPTURE")){
+        name.setText((values[position].getName()).substring(9));
+       }
+        else{
+           name.setText("Unrecognized File");
+       }*/
+
+        delete.setText("Delete");
+        delete.setOnClickListener(new View.OnClickListener() {
+                                      @Override
+                                      public void onClick(View view) {
+                                          try {
+                                              values[pos].getCanonicalFile().delete();
+                                          }catch(IOException e){
+                                              Log.e("CaputerAdapter", e.toString());
+                                          }
+                                      }
+                                  }
+        );
+
+
         long size = getDirectorySize(values[position]);
 
         if (size/(1000*1000) < 1) {
@@ -54,8 +82,9 @@ public class CaptureAdapter extends BaseAdapter {
         else if(size/(1000*1000*1000) < 1) {
             description.setText(Long.toString(size / (1000 * 1000)) + " MB");
         }
-        else
-            description.setText(Long.toString(size /(1000 * 1000 * 1000)) + " GB");
+        else {
+            description.setText(Long.toString(size / (1000 * 1000 * 1000)) + " GB");
+        }
 
         return rowView;
     }

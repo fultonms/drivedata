@@ -29,10 +29,20 @@
         android:layout_height="26dp"
         android:layout_above="@id/captureDescription"
         android:layout_alignParentRight="true"
+        android:layout_toLeftOf="@+id/deleteBut"
         android:layout_alignParentTop="true"
         android:layout_alignWithParentIfMissing="true"
         android:gravity="center_vertical"
         android:textSize="16sp" />
+
+    <Button
+        android:id="@+id/deleteBut"
+        android:layout_width="100dp"
+        android:layout_height="fill_parent"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:textSize="16sp"
+     />
 
 
 

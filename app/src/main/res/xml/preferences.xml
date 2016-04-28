@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <SwitchPreference
+        android:key="pref_location_on"
+        android:title="Location Data"
+        android:summary="Turn Location Data On Or Off"
+        android:defaultValue="true"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+</PreferenceScreen>

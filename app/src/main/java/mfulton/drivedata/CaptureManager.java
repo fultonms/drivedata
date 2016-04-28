@@ -20,12 +20,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
-public class CaptureManager extends Activity {
+public class CaptureManager extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_capture_manager);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         final ListView listView = (ListView) findViewById(R.id.list);
         final ArrayList<File> list = new ArrayList<File>();
