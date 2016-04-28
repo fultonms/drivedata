@@ -11,10 +11,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Adapter;
+import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -45,27 +47,20 @@ public class CaptureAdapter extends BaseAdapter{
         TextView description = (TextView) rowView.findViewById(R.id.captureDescription);
         Button delete = (Button) rowView.findViewById(R.id.deleteBut);
 
+        final CaptureAdapter adaptor= this;
+
         final int pos = position;
 
-        //Bitmap image = BitmapFactory.decodeFile(new File(values[position].getPath() + "/images/").listFiles()[0].getPath());
-        //ImageView icon = (ImageView) rowView.findViewById(R.id.icon);
-        //icon.setImageBitmap(image);
-
         name.setText(values[position].getName());
-
-       /*if(values[position].getName().contains("CAPTURE")){
-        name.setText((values[position].getName()).substring(9));
-       }
-        else{
-           name.setText("Unrecognized File");
-       }*/
 
         delete.setText("Delete");
         delete.setOnClickListener(new View.OnClickListener() {
                                       @Override
                                       public void onClick(View view) {
                                           try {
-                                              values[pos].getCanonicalFile().delete();
+
+                                              boolean success = deleteDirectory(values[pos].getCanonicalFile());
+                                              adaptor.notifyDataSetChanged();
                                           }catch(IOException e){
                                               Log.e("CaputerAdapter", e.toString());
                                           }
@@ -107,5 +102,21 @@ public class CaptureAdapter extends BaseAdapter{
                 size += getDirectorySize(file);
         }
         return size;
+    }
+
+    public static boolean deleteDirectory(File path) {
+// TODO Auto-generated method stub
+        if( path.exists() ) {
+            File[] files = path.listFiles();
+            for(int i=0; i<files.length; i++) {
+                if(files[i].isDirectory()) {
+                    deleteDirectory(files[i]);
+                }
+                else {
+                    files[i].delete();
+                }
+            }
+        }
+        return(path.delete());
     }
 }
