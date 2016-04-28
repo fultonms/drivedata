@@ -11,4 +11,21 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
+    <SwitchPreference
+        android:key="pref_accel_on"
+        android:title="AccelerationData"
+        android:summary="Turn Acceleration Data On Or Off"
+        android:defaultValue="true"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <EditTextPreference
+        android:key="interval"
+        android:title="Location Interval"
+        android:summary="The maximum milliseconds between location updates"
+        android:defaultValue="5000"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+
 </PreferenceScreen>
